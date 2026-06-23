@@ -1,0 +1,1743 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Accessible API Tester — Beginner Testing Manual</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --surface2: #222536;
+      --border: #2e3148;
+      --accent: #6c8ef5;
+      --accent2: #a78bfa;
+      --green: #34d399;
+      --red: #f87171;
+      --yellow: #fbbf24;
+      --text: #e2e8f0;
+      --muted: #8892b0;
+      --code-bg: #12141e;
+      --radius: 8px;
+      --sidebar-width: 280px;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    /* ── Skip link ── */
+    .skip-link {
+      position: absolute;
+      top: -100%;
+      left: 8px;
+      background: var(--accent);
+      color: #0f1117;
+      padding: 10px 18px;
+      border-radius: 0 0 var(--radius) var(--radius);
+      font-weight: 700;
+      font-size: 14px;
+      z-index: 9999;
+      text-decoration: none;
+    }
+    .skip-link:focus { top: 0; }
+
+    /* ── Focus styles — visible for keyboard and screen reader users ── */
+    :focus-visible {
+      outline: 3px solid var(--accent);
+      outline-offset: 3px;
+      border-radius: 3px;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.7;
+      display: flex;
+      min-height: 100vh;
+    }
+
+    /* ── Sidebar ── */
+    #sidebar {
+      width: var(--sidebar-width);
+      min-width: var(--sidebar-width);
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      overflow-y: auto;
+      padding: 24px 0;
+    }
+
+    #sidebar .brand {
+      padding: 0 20px 20px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 12px;
+    }
+
+    #sidebar .brand p {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--accent);
+      line-height: 1.3;
+    }
+
+    #sidebar .brand small {
+      display: block;
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: 4px;
+    }
+
+    #sidebar nav ul { list-style: none; }
+
+    #sidebar nav ul li a {
+      display: block;
+      padding: 7px 20px;
+      font-size: 13px;
+      color: var(--muted);
+      text-decoration: none;
+      border-left: 3px solid transparent;
+      transition: all 0.15s;
+    }
+
+    #sidebar nav ul li a:hover,
+    #sidebar nav ul li a:focus-visible {
+      color: var(--text);
+      background: var(--surface2);
+      border-left-color: var(--accent);
+      outline: none;
+    }
+
+    .nav-group-heading {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--muted);
+      padding: 16px 20px 4px;
+    }
+
+    .nav-section-link { padding-left: 32px !important; font-size: 12px !important; }
+
+    /* ── Main ── */
+    #main {
+      flex: 1;
+      max-width: 860px;
+      padding: 48px 56px;
+      overflow-x: hidden;
+    }
+
+    /* ── Back to top ── */
+    .back-to-top {
+      display: inline-block;
+      font-size: 12px;
+      color: var(--accent);
+      text-decoration: none;
+      margin-top: 8px;
+      opacity: 0.7;
+    }
+    .back-to-top:hover,
+    .back-to-top:focus-visible { opacity: 1; }
+
+    /* ── Hero ── */
+    #hero { margin-bottom: 48px; }
+    #hero h1 { font-size: 32px; font-weight: 800; color: var(--text); line-height: 1.2; }
+    #hero .subtitle { font-size: 16px; color: var(--muted); margin-top: 10px; max-width: 600px; }
+    #hero .badge {
+      display: inline-block;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 4px 12px;
+      font-size: 12px;
+      color: var(--accent);
+      margin-top: 14px;
+    }
+
+    /* ── Headings ── */
+    h2 {
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--text);
+      margin: 48px 0 16px;
+      padding-top: 8px;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 10px;
+    }
+
+    h3 { font-size: 16px; font-weight: 600; color: var(--accent2); margin: 24px 0 10px; }
+
+    p { margin-bottom: 14px; color: var(--text); font-size: 15px; }
+
+    /* ── Section cards ── */
+    .section-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 28px 32px;
+      margin-bottom: 32px;
+    }
+
+    .section-card .section-header {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 18px;
+    }
+
+    .section-number {
+      background: var(--accent);
+      color: #0f1117;
+      font-weight: 800;
+      font-size: 13px;
+      min-width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .section-card h2 {
+      font-size: 18px;
+      margin: 0;
+      padding: 0;
+      border: none;
+      color: var(--text);
+    }
+
+    /* ── Overview box ── */
+    .overview-box {
+      background: var(--code-bg);
+      border-left: 3px solid var(--accent2);
+      border-radius: 0 var(--radius) var(--radius) 0;
+      padding: 12px 16px;
+      margin-bottom: 18px;
+      font-size: 14px;
+      color: var(--muted);
+    }
+    .overview-box strong { color: var(--text); }
+
+    /* ── Steps — proper ordered list, CSS decoration only ── */
+    ol.steps {
+      padding-left: 0;
+      /* list-style kept as none for visual styling; CSS counter provides visual numbers.
+         Safari VoiceOver strips list semantics with list-style:none, so we add
+         a zero-width space in ::marker below to preserve the <ol> role. */
+      list-style: none;
+      counter-reset: step-counter;
+    }
+
+    /* Preserve <ol> semantics for VoiceOver on Safari */
+    ol.steps li::marker { content: "\200B"; }
+
+    ol.steps li {
+      display: flex;
+      gap: 14px;
+      margin-bottom: 12px;
+      font-size: 15px;
+      align-items: flex-start;
+      counter-increment: step-counter;
+    }
+
+    /* Visual step number — decorative, not in DOM, screen readers use <ol> numbering */
+    ol.steps li::before {
+      content: counter(step-counter);
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--accent);
+      font-weight: 700;
+      font-size: 12px;
+      min-width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-top: 2px;
+      flex-shrink: 0;
+    }
+
+    /* ── Code ── */
+    code {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 2px 6px;
+      font-family: "Cascadia Code", "Fira Code", Consolas, monospace;
+      font-size: 13px;
+      color: #a5d6ff;
+    }
+
+    pre {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px 20px;
+      overflow-x: auto;
+      margin: 12px 0 18px;
+      font-family: "Cascadia Code", "Fira Code", Consolas, monospace;
+      font-size: 13px;
+      line-height: 1.6;
+      color: #a5d6ff;
+    }
+
+    pre .key    { color: #f97583; }
+    pre .string { color: #9ecbff; }
+    pre .number { color: #79b8ff; }
+    pre .punct  { color: #e1e4e8; }
+
+    .url-box {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 10px 16px;
+      font-family: "Cascadia Code", "Fira Code", Consolas, monospace;
+      font-size: 13px;
+      color: var(--green);
+      margin: 8px 0 14px;
+      word-break: break-all;
+    }
+
+    /* ── Tables ── */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 14px 0 20px;
+      font-size: 14px;
+    }
+
+    caption {
+      text-align: left;
+      font-size: 12px;
+      color: var(--muted);
+      padding-bottom: 6px;
+      font-style: italic;
+    }
+
+    thead th {
+      background: var(--surface2);
+      color: var(--muted);
+      font-weight: 600;
+      text-align: left;
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--border);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    tbody td {
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--border);
+      color: var(--text);
+    }
+
+    tbody tr:last-child td { border-bottom: none; }
+    tbody tr:hover td { background: var(--surface2); }
+
+    /* ── Checklist ── */
+    .checklist td:last-child { width: 80px; text-align: center; }
+
+    .checklist td:last-child input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+      accent-color: var(--green);
+      cursor: pointer;
+    }
+
+    /* ── Summary table form controls ── */
+    .result-table select,
+    .result-table input[type="text"] {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      color: var(--text);
+      padding: 5px 8px;
+      font-size: 13px;
+      width: 100%;
+    }
+
+    .result-table select { cursor: pointer; }
+
+    /* ── Callout boxes ── */
+    .callout {
+      border-radius: var(--radius);
+      padding: 14px 18px;
+      margin: 16px 0;
+      font-size: 14px;
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+    }
+
+    .callout.info  { background: #1a2744; border: 1px solid #2563eb44; }
+    .callout.tip   { background: #1a2e1e; border: 1px solid #16a34a44; }
+    .callout.warn  { background: #2d2008; border: 1px solid #d9770044; }
+
+    .callout .icon { font-size: 18px; min-width: 24px; margin-top: 1px; }
+    .callout .body { color: var(--text); line-height: 1.6; }
+    .callout .body strong { color: var(--text); }
+
+    /* ── Method badge ── */
+    .method {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-family: monospace;
+      margin-right: 4px;
+    }
+    .method.get    { background: #1a3a1a; color: var(--green);  border: 1px solid #34d39944; }
+    .method.post   { background: #1a2744; color: #60a5fa;       border: 1px solid #60a5fa44; }
+    .method.put    { background: #2d2008; color: var(--yellow); border: 1px solid #fbbf2444; }
+    .method.patch  { background: #2d1a00; color: #fb923c;       border: 1px solid #fb923c44; }
+    .method.delete { background: #2d1010; color: var(--red);    border: 1px solid #f8717144; }
+
+    /* ── Status badge ── */
+    .status {
+      display: inline-block;
+      font-size: 12px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-family: monospace;
+    }
+    .status.ok  { background: #1a3a1a; color: var(--green); border: 1px solid #34d39944; }
+    .status.err { background: #2d1010; color: var(--red);   border: 1px solid #f8717144; }
+
+    /* ── TOC ── */
+    .toc-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px 28px;
+      margin-bottom: 40px;
+    }
+
+    .toc-card h2 { margin: 0 0 16px; font-size: 16px; border: none; padding: 0; color: var(--muted); }
+
+    .toc-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px 24px;
+    }
+
+    .toc-grid a {
+      color: var(--muted);
+      text-decoration: none;
+      font-size: 13px;
+      padding: 4px 0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: color 0.15s;
+    }
+
+    .toc-grid a:hover,
+    .toc-grid a:focus-visible { color: var(--accent); }
+
+    .toc-num {
+      font-size: 11px;
+      color: var(--accent);
+      font-weight: 700;
+      min-width: 20px;
+    }
+
+    hr { border: none; border-top: 1px solid var(--border); margin: 40px 0; }
+
+    /* ── Keyboard key badge ── */
+    kbd {
+      display: inline-block;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-bottom-width: 2px;
+      border-radius: 4px;
+      padding: 1px 7px;
+      font-family: monospace;
+      font-size: 13px;
+      color: var(--accent);
+      line-height: 1.6;
+    }
+
+    /* ── Visually hidden — readable by screen readers, invisible on screen ── */
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+    @media (max-width: 900px) {
+      #sidebar { display: none; }
+      #main { padding: 32px 24px; }
+      .toc-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Skip link — first focusable element on the page, appears on keyboard focus -->
+<a href="#main" class="skip-link">Skip to main content</a>
+
+<!-- ═══════════ SIDEBAR ═══════════ -->
+<aside id="sidebar" aria-label="Manual sidebar">
+  <div class="brand">
+    <p>Accessible API Tester</p>
+    <small>Beginner Testing Manual</small>
+  </div>
+
+  <nav aria-label="Manual navigation">
+    <p class="nav-group-heading" id="nav-start">Getting Started</p>
+    <ul aria-labelledby="nav-start">
+      <li><a href="#basics">API Basics</a></li>
+      <li><a href="#layout">App Layout</a></li>
+      <li><a href="#toc">All Test Sections</a></li>
+    </ul>
+
+    <p class="nav-group-heading" id="nav-requests">Requests</p>
+    <ul aria-labelledby="nav-requests">
+      <li><a href="#s1" class="nav-section-link">1 — Basic GET</a></li>
+      <li><a href="#s2" class="nav-section-link">2 — GET List</a></li>
+      <li><a href="#s3" class="nav-section-link">3 — POST (Create)</a></li>
+      <li><a href="#s4" class="nav-section-link">4 — Query Params</a></li>
+      <li><a href="#s5" class="nav-section-link">5 — Custom Headers</a></li>
+      <li><a href="#s6" class="nav-section-link">6 — Bearer Auth</a></li>
+      <li><a href="#s7" class="nav-section-link">7 — PUT (Update)</a></li>
+      <li><a href="#s8" class="nav-section-link">8 — DELETE</a></li>
+      <li><a href="#s9" class="nav-section-link">9 — 404 Error</a></li>
+    </ul>
+
+    <p class="nav-group-heading" id="nav-features">Features</p>
+    <ul aria-labelledby="nav-features">
+      <li><a href="#s10" class="nav-section-link">10 — Variables</a></li>
+      <li><a href="#s11" class="nav-section-link">11 — Collections</a></li>
+      <li><a href="#s12" class="nav-section-link">12 — History</a></li>
+      <li><a href="#s13" class="nav-section-link">13 — Assertions</a></li>
+      <li><a href="#s14" class="nav-section-link">14 — Collection Run</a></li>
+      <li><a href="#s15" class="nav-section-link">15 — Export</a></li>
+      <li><a href="#s16" class="nav-section-link">16 — Mock Server</a></li>
+      <li><a href="#s17" class="nav-section-link">17 — GraphQL</a></li>
+      <li><a href="#s18" class="nav-section-link">18 — Timeout</a></li>
+      <li><a href="#s19" class="nav-section-link">19 — Multiple Tabs</a></li>
+      <li><a href="#s20" class="nav-section-link">20 — Workspaces</a></li>
+    </ul>
+
+    <p class="nav-group-heading" id="nav-ref">Reference</p>
+    <ul aria-labelledby="nav-ref">
+      <li><a href="#summary">Results Summary</a></li>
+      <li><a href="#troubleshoot">Troubleshooting</a></li>
+      <li><a href="#apis">Free APIs Used</a></li>
+    </ul>
+  </nav>
+</aside>
+
+<!-- ═══════════ MAIN ═══════════ -->
+<main id="main">
+
+  <!-- Hero -->
+  <div id="hero">
+    <h1>Beginner Testing Manual</h1>
+    <p class="subtitle">A step-by-step guide to testing the Accessible API Tester app — no prior API knowledge required.</p>
+    <p class="badge" role="note">20 Test Sections · Free APIs Only · No Sign-up Needed</p>
+  </div>
+
+  <!-- ── BASICS ── -->
+  <section aria-labelledby="basics-heading">
+    <h2 id="basics-heading">Before You Start — Understanding the Basics</h2>
+
+    <h3>What is an API?</h3>
+    <p>An API is a way for one computer program to talk to another. When you open a weather app and it shows today's temperature, it sent a <em>request</em> to a weather server and got data back. That request-and-response is an API call.</p>
+    <p>Think of it like a <strong>waiter in a restaurant</strong>: you (the app) tell the waiter (API) what you want, the waiter goes to the kitchen (server), and brings back your food (data).</p>
+
+    <h3>What is JSON?</h3>
+    <p>JSON is the format most APIs use to send data. It looks like this:</p>
+    <pre tabindex="0" aria-label="Example JSON object with name, age and city fields">{
+  <span class="key">"name"</span>: <span class="string">"Raj"</span>,
+  <span class="key">"age"</span>: <span class="number">28</span>,
+  <span class="key">"city"</span>: <span class="string">"Mumbai"</span>
+}</pre>
+    <p>Curly braces <code>{}</code> hold the data. Each piece has a name (called a key) and a value, separated by a colon.</p>
+
+    <h3>HTTP Methods — What Action You Want</h3>
+    <table>
+      <caption>HTTP methods and what they mean</caption>
+      <thead>
+        <tr><th scope="col">Method</th><th scope="col">Real-world meaning</th><th scope="col">Example</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><span class="method get" aria-label="GET method">GET</span></td><td>Fetch or read data</td><td>View a user's profile</td></tr>
+        <tr><td><span class="method post" aria-label="POST method">POST</span></td><td>Create something new</td><td>Submit a registration form</td></tr>
+        <tr><td><span class="method put" aria-label="PUT method">PUT</span></td><td>Replace an item entirely</td><td>Update your whole profile</td></tr>
+        <tr><td><span class="method patch" aria-label="PATCH method">PATCH</span></td><td>Update part of an item</td><td>Change only your phone number</td></tr>
+        <tr><td><span class="method delete" aria-label="DELETE method">DELETE</span></td><td>Delete something</td><td>Delete your account</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Status Codes — Did It Work?</h3>
+    <table>
+      <caption>HTTP status codes and their meanings</caption>
+      <thead>
+        <tr><th scope="col">Code</th><th scope="col">Meaning</th><th scope="col">Think of it as</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><span class="status ok">200 OK</span></td><td>Success</td><td>Done correctly</td></tr>
+        <tr><td><span class="status ok">201 Created</span></td><td>New item was made</td><td>Successfully created</td></tr>
+        <tr><td><span class="status ok">204 No Content</span></td><td>Success, nothing to return</td><td>Deleted successfully</td></tr>
+        <tr><td><span class="status err">400 Bad Request</span></td><td>You sent something wrong</td><td>Your mistake</td></tr>
+        <tr><td><span class="status err">401 Unauthorized</span></td><td>Wrong or missing credentials</td><td>Not logged in</td></tr>
+        <tr><td><span class="status err">403 Forbidden</span></td><td>No permission</td><td>Not allowed</td></tr>
+        <tr><td><span class="status err">404 Not Found</span></td><td>That thing does not exist</td><td>Wrong address</td></tr>
+        <tr><td><span class="status err">500 Server Error</span></td><td>The server broke</td><td>Server's fault</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- ── LAYOUT ── -->
+  <section aria-labelledby="layout-heading">
+    <h2 id="layout-heading">How to Open the App</h2>
+    <ol class="steps" aria-label="Steps">
+      <li>Open PowerShell</li>
+      <li>Navigate to the app folder</li>
+      <li>Run: <code>.\run-desktop.ps1</code></li>
+      <li>A window opens — this is the Accessible API Tester</li>
+    </ol>
+
+    <h2 id="layout-heading2">The App Layout</h2>
+    <p>The app has two main areas: a <strong>sidebar</strong> with navigation links, and a <strong>main area</strong> where you do the actual work.</p>
+
+    <table>
+      <caption>Sidebar sections and their purpose</caption>
+      <thead>
+        <tr><th scope="col">Sidebar Section</th><th scope="col">What it is for</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Home</td><td>Welcome screen</td></tr>
+        <tr><td>Workspace</td><td>Switch between project workspaces</td></tr>
+        <tr><td>Requests</td><td>Send API requests — the main work area</td></tr>
+        <tr><td>Collections</td><td>Saved requests you can reuse</td></tr>
+        <tr><td>History</td><td>All requests you have sent before</td></tr>
+        <tr><td>Variables</td><td>Store values you reuse, like API keys</td></tr>
+        <tr><td>Environments</td><td>Save different sets of variables for dev, test, or production</td></tr>
+        <tr><td>Mock Server</td><td>Create fake APIs for testing</td></tr>
+        <tr><td>Google OAuth</td><td>Get a Google access token</td></tr>
+        <tr><td>Settings</td><td>App-level settings like timeout and SSL</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- ── TOC ── -->
+  <nav class="toc-card" aria-labelledby="toc-heading">
+    <h2 id="toc-heading">All Test Sections</h2>
+    <div class="toc-grid">
+      <a href="#s1"><span class="toc-num" aria-hidden="true">01</span> Basic GET Request</a>
+      <a href="#s11"><span class="toc-num" aria-hidden="true">11</span> Saving to Collections</a>
+      <a href="#s2"><span class="toc-num" aria-hidden="true">02</span> GET a List</a>
+      <a href="#s12"><span class="toc-num" aria-hidden="true">12</span> Request History</a>
+      <a href="#s3"><span class="toc-num" aria-hidden="true">03</span> POST — Create Data</a>
+      <a href="#s13"><span class="toc-num" aria-hidden="true">13</span> Assertions</a>
+      <a href="#s4"><span class="toc-num" aria-hidden="true">04</span> Query Parameters</a>
+      <a href="#s14"><span class="toc-num" aria-hidden="true">14</span> Collection Run</a>
+      <a href="#s5"><span class="toc-num" aria-hidden="true">05</span> Custom Headers</a>
+      <a href="#s15"><span class="toc-num" aria-hidden="true">15</span> Exporting Collections</a>
+      <a href="#s6"><span class="toc-num" aria-hidden="true">06</span> Bearer Auth</a>
+      <a href="#s16"><span class="toc-num" aria-hidden="true">16</span> Mock Server</a>
+      <a href="#s7"><span class="toc-num" aria-hidden="true">07</span> PUT — Update Data</a>
+      <a href="#s17"><span class="toc-num" aria-hidden="true">17</span> GraphQL Request</a>
+      <a href="#s8"><span class="toc-num" aria-hidden="true">08</span> DELETE Request</a>
+      <a href="#s18"><span class="toc-num" aria-hidden="true">18</span> Timeout Setting</a>
+      <a href="#s9"><span class="toc-num" aria-hidden="true">09</span> 404 Error Handling</a>
+      <a href="#s19"><span class="toc-num" aria-hidden="true">19</span> Multiple Tabs</a>
+      <a href="#s10"><span class="toc-num" aria-hidden="true">10</span> Environment Variables</a>
+      <a href="#s20"><span class="toc-num" aria-hidden="true">20</span> Workspaces</a>
+    </div>
+  </nav>
+
+  <hr />
+
+  <!-- ══════════════════════════════════════
+       SECTION 1
+  ══════════════════════════════════════ -->
+  <section id="s1" class="section-card" aria-labelledby="s1-title">
+    <div class="section-header">
+      <div class="section-number" aria-hidden="true">1</div>
+      <h2 id="s1-title">Basic GET Request</h2>
+    </div>
+
+    <div class="overview-box" role="note" aria-label="Section 1 overview">
+      <strong>What we are testing:</strong> Can the app send a basic GET request and show the response?<br>
+      <strong>What is GET?</strong> It means "give me some data." Like asking a question and getting an answer.
+    </div>
+
+    <h3>Steps</h3>
+    <ol class="steps" aria-label="Steps">
+      <li>Activate the <strong>Requests</strong> link in the sidebar navigation</li>
+      <li>Find the <strong>Method</strong> dropdown and confirm it is set to <strong>GET</strong></li>
+      <li>Find the <strong>URL</strong> text field and type:
+        <p class="url-box"><code>https://jsonplaceholder.typicode.com/posts/1</code></p>
+      </li>
+      <li>Activate the <strong>Send</strong> button</li>
+      <li>The response will appear in the <strong>Response</strong> section below — navigate to it and read the status code and body</li>
+    </ol>
+
+    <h3>Expected Response</h3>
+    <p>Status: <span class="status ok">200 OK</span> · Response time: under 1000 milliseconds</p>
+    <pre tabindex="0" aria-label="Expected JSON response with userId, id, title and body fields">{
+  <span class="key">"userId"</span>: <span class="number">1</span>,
+  <span class="key">"id"</span>: <span class="number">1</span>,
+  <span class="key">"title"</span>: <span class="string">"sunt aut facere repellat..."</span>,
+  <span class="key">"body"</span>: <span class="string">"quia et suscipit..."</span>
+}</pre>
+
+    <h3>Pass / Fail Checklist</h3>
+    <table class="checklist">
+      <caption>Checklist for Section 1: Basic GET Request</caption>
+      <thead>
+        <tr><th scope="col">Check</th><th scope="col">Expected</th><th scope="col">Pass?</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Status code shown</td><td>200</td><td><input type="checkbox" aria-label="Section 1 check: Status code is 200" /></td></tr>
+        <tr><td>Response has an "id" field</td><td>Yes</td><td><input type="checkbox" aria-label="Section 1 check: Response contains id field" /></td></tr>
+        <tr><td>Response has a "title" field</td><td>Yes</td><td><input type="checkbox" aria-label="Section 1 check: Response contains title field" /></td></tr>
+        <tr><td>No error message shown in the app</td><td>Yes</td><td><input type="checkbox" aria-label="Section 1 check: No error message is shown" /></td></tr>
+      </tbody>
+    </table>
+    <a href="#toc" class="back-to-top" aria-label="Back to table of contents from Section 1">↑ Back to top</a>
+  </section>
+
+  <!-- ══════════════════════════════════════
+       SECTION 2
+  ══════════════════════════════════════ -->
+  <section id="s2" class="section-card" aria-labelledby="s2-title">
+    <div class="section-header">
+      <div class="section-number" aria-hidden="true">2</div>
+      <h2 id="s2-title">GET a List</h2>
+    </div>
+
+    <div class="overview-box" role="note" aria-label="Section 2 overview">
+      <strong>What we are testing:</strong> Can the app handle a response that contains many items at once?
+    </div>
+
+    <h3>Steps</h3>
+    <ol class="steps" aria-label="Steps">
+      <li>Find the <strong>Method</strong> dropdown and confirm it is set to <strong>GET</strong></li>
+      <li>Find the <strong>URL</strong> text field and type:
+        <p class="url-box"><code>https://jsonplaceholder.typicode.com/posts</code></p>
+      </li>
+      <li>Activate the <strong>Send</strong> button</li>
+    </ol>
+
+    <h3>Expected Response</h3>
+    <p>Status: <span class="status ok">200 OK</span> · The response body starts with a square bracket <code>[</code> which means it is a list (called an array). It contains 100 posts.</p>
+
+    <h3>Pass / Fail Checklist</h3>
+    <table class="checklist">
+      <caption>Checklist for Section 2: GET a List</caption>
+      <thead>
+        <tr><th scope="col">Check</th><th scope="col">Expected</th><th scope="col">Pass?</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Status code</td><td>200</td><td><input type="checkbox" aria-label="Section 2 check: Status code is 200" /></td></tr>
+        <tr><td>Response starts with a square bracket, meaning it is a list</td><td>Yes</td><td><input type="checkbox" aria-label="Section 2 check: Response is a list starting with square bracket" /></td></tr>
+        <tr><td>Multiple items are visible in the response</td><td>Yes</td><td><input type="checkbox" aria-label="Section 2 check: Multiple items visible in response" /></td></tr>
+      </tbody>
+    </table>
+    <a href="#toc" class="back-to-top" aria-label="Back to table of contents from Section 2">↑ Back to top</a>
+  </section>
+
+  <!-- ══════════════════════════════════════
+       SECTION 3
+  ══════════════════════════════════════ -->
+  <section id="s3" class="section-card" aria-labelledby="s3-title">
+    <div class="section-header">
+      <div class="section-number" aria-hidden="true">3</div>
+      <h2 id="s3-title">POST — Create Data</h2>
+    </div>
+
+    <div class="overview-box" role="note" aria-label="Section 3 overview">
+      <strong>What we are testing:</strong> Can the app send a POST request with a JSON body?<br>
+      <strong>What is POST?</strong> It means "create something new." Like filling in a form and submitting it.
+    </div>
+
+    <h3>Steps</h3>
+    <ol class="steps" aria-label="Steps">
+      <li>Find the <strong>Method</strong> dropdown and change it to <strong>POST</strong></li>
+      <li>Find the <strong>URL</strong> text field and type:
+        <p class="url-box"><code>https://jsonplaceholder.typicode.com/posts</code></p>
+      </li>
+      <li>Navigate down the form to the group labelled <strong>"Body"</strong> — your screen reader will announce it as a group</li>
+      <li>Inside the Body group, find the <strong>Body mode</strong> dropdown and select <strong>Raw JSON</strong></li>
+      <li>Find the <strong>Raw JSON</strong> text area and type exactly this:
+        <pre tabindex="0" aria-label="JSON body to type: title My First Post, body This is my content, userId 1">{
+  <span class="key">"title"</span>: <span class="string">"My First Post"</span>,
+  <span class="key">"body"</span>: <span class="string">"This is my content."</span>,
+  <span class="key">"userId"</span>: <span class="number">1</span>
+}</pre>
+      </li>
+      <li>Activate the <strong>Send</strong> button</li>
+    </ol>
+
+    <h3>Expected Response</h3>
+    <p>Status: <span class="status ok">201 Created</span> · The server returns your data back with a new <code>"id"</code> field added to it.</p>
+
+    <h3>Pass / Fail Checklist</h3>
+    <table class="checklist">
+      <caption>Checklist for Section 3: POST Create Data</caption>
+      <thead>
+        <tr><th scope="col">Check</th><th scope="col">Expected</th><th scope="col">Pass?</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Status code</td><td>201</td><td><input type="checkbox" aria-label="Section 3 check: Status code is 201 Created" /></td></tr>
+        <tr><td>Response contains an "id" field</td><td>Yes</td><td><input type="checkbox" aria-label="Section 3 check: Response contains id field" /></td></tr>
+        <tr><td>Response contains your title "My First Post"</td><td>Yes</td><td><input type="checkbox" aria-label="Section 3 check: Response contains your title text" /></td></tr>
+      </tbody>
+    </table>
+    <a href="#toc" class="back-to-top" aria-label="Back to table of contents from Section 3">↑ Back to top</a>
+  </section>
+
+  <!-- ══════════════════════════════════════
+       SECTION 4
+  ══════════════════════════════════════ -->
+  <section id="s4" class="section-card" aria-labelledby="s4-title">
+    <div class="section-header">
+      <div class="section-number" aria-hidden="true">4</div>
+      <h2 id="s4-title">Query Parameters</h2>
+    </div>
+
+    <div class="overview-box" role="note" aria-label="Section 4 overview">
+      <strong>What we are testing:</strong> Can the app add filters to a URL and return only matching results?<br><br>
+      <strong>What are query parameters?</strong> Think of them like a search filter on a shopping website — when you filter by brand or price, those filters are added to the URL.<br><br>
+      <strong>How they look in a URL:</strong><br>
+      Without filter: <code>https://jsonplaceholder.typicode.com/posts</code> — returns all 100 posts<br>
+      With filter: <code>https://jsonplaceholder.typicode.com/posts?userId=1</code> — returns only posts by user 1<br><br>
+      The question mark <code>?</code> separates the address from the filter. <code>userId</code> is the filter name and <code>1</code> is the filter value.
+    </div>
+
+    <div class="callout info" role="note" aria-label="Tip about the Params tab">
+      <div class="icon" aria-hidden="true">ℹ️</div>
+      <div class="body">Instead of typing <code>?userId=1</code> directly into the URL, this app has a <strong>Query params group</strong> in the request form where you fill in the name and value separately. The app builds the full URL with the filter automatically when you activate Send — the URL text field itself stays unchanged.</div>
+    </div>
+
+    <h3>Steps</h3>
+    <ol class="steps" aria-label="Steps">
+      <li>Find the <strong>Method</strong> dropdown and confirm it is set to <strong>GET</strong></li>
+      <li>Find the <strong>URL</strong> text field and type — <strong>without</strong> any question mark:
+        <p class="url-box"><code>https://jsonplaceholder.typicode.com/posts</code></p>
+      </li>
+      <li>Navigate down the form to the group labelled <strong>"Query params"</strong> — your screen reader will announce "Query params group"</li>
+      <li>Inside the Query params group, find the <strong>Query param 1 name</strong> text field and type: <code>userId</code></li>
+      <li>Tab to the <strong>Query param 1 value</strong> text field and type: <code>1</code></li>
+      <li>Activate the <strong>Send</strong> button — the app automatically adds <code>?userId=1</code> to the URL before sending. The URL text field itself does not change; the filter is applied internally.</li>
+    </ol>
+
+    <h3>Expected Response</h3>
+    <p>Status: <span class="status ok">200 OK</span> · In Section 2 you got 100 posts with no filter. Now you should get only <strong>10 posts</strong> — all of them belonging to user 1. Every single item in the response will have <code>"userId": 1</code>.</p>
+
+    <h3>Pass / Fail Checklist</h3>
+    <table class="checklist">
+      <caption>Checklist for Section 4: Query Parameters</caption>
+      <thead>
+        <tr><th scope="col">Check</th><th scope="col">Expected</th><th scope="col">Pass?</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Status code</td><td>200</td><td><input type="checkbox" aria-label="Section 4 check: Status code is 200" /></td></tr>
+        <tr><td>Response contains only posts with "userId" equal to 1 — confirming the filter was applied</td><td>Yes</td><td><input type="checkbox" aria-label="Section 4 check: Response contains only posts with userId equal to 1" /></td></tr>
+        <tr><td>All response items have "userId" equal to 1</td><td>Yes</td><td><input type="checkbox" aria-label="Section 4 check: All response items have userId equal to 1" /></td></tr>
+        <tr><td>Fewer results than Section 2 — about 10 instead of 100</td><td>Yes</td><td><input type="checkbox" aria-label="Section 4 check: Fewer results than Section 2" /></td></tr>
+      </tbody>
+    </table>
+    <a href="#toc" class="back-to-top" aria-label="Back to table of contents from Section 4">↑ Back to top</a>
+  </section>
+
+  <!-- ══════════════════════════════════════
+       SECTION 5
+  ══════════════════════════════════════ -->
+  <section id="s5" class="section-card" aria-labelledby="s5-title">
+    <div class="section-header">
+      <div class="section-number" aria-hidden="true">5</div>
+      <h2 id="s5-title">Custom Headers</h2>
+    </div>
+
+    <div class="overview-box" role="note" aria-label="Section 5 overview">
+      <strong>What we are testing:</strong> Can the app send custom headers with a request?<br>
+      <strong>What are headers?</strong> Extra information sent alongside a request — like a label on an envelope. Common headers include <code>Content-Type</code> (what format the body is in) and <code>Authorization</code> (your credentials).
+    </div>
+
+    <h3>Steps</h3>
+    <ol class="steps" aria-label="Steps">
+      <li>Find the <strong>Method</strong> dropdown and confirm it is set to <strong>GET</strong></li>
+      <li>Find the <strong>URL</strong> text field and type:
+        <p class="url-box"><code>https://httpbin.org/headers</code></p>
+      </li>
+      <li>Navigate down the form to the group labelled <strong>"Headers"</strong> — your screen reader will announce "Headers group"</li>
+      <li>Inside the Headers group, find the <strong>Header 1 name</strong> text field and type: <code>X-Custom-Header</code></li>
+      <li>Tab to the <strong>Header 1 value</strong> text field and type: <code>HelloFromTester</code></li>
+      <li>Activate the <strong>Send</strong> button</li>
+    </ol>
+
+    <h3>Expected Response</h3>
+    <p>Status: <span class="status ok">200 OK</span> · The httpbin.org service echoes back every header the server received from you. Your custom header should appear in the response.</p>
+    <pre tabindex="0" aria-label="Expected response showing your custom header echoed back">{
+  <span class="key">"headers"</span>: {
+    <span class="key">"X-Custom-Header"</span>: <span class="string">"HelloFromTester"</span>,
+    ...
+  }
+}</pre>
+
+    <h3>Pass / Fail Checklist</h3>
+    <table class="checklist">
+      <caption>Checklist for Section 5: Custom Headers</caption>
+      <thead>
+        <tr><th scope="col">Check</th><th scope="col">Expected</th><th scope="col">Pass?</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Status code</td><td>200</td><td><input type="checkbox" aria-label="Section 5 check: Status code is 200" /></td></tr>
+        <tr><td>Your custom header X-Custom-Header appears in the response body</td><td>Yes</td><td><input type="checkbox" aria-label="Section 5 check: Custom header appears in response" /></td></tr>
+      </tbody>
+    </table>
+    <a href="#toc" class="back-to-top" aria-label="Back to table of contents from Section 5">↑ Back to top</a>
+  </section>
+
+  <!-- ══════════════════════════════════════
+       SECTION 6
+  ══════════════════════════════════════ -->
+  <section id="s6" class="section-card" aria-labelledby="s6-title">
+    <div class="section-header">
+      <div class="section-number" aria-hidden="true">6</div>
+      <h2 id="s6-title">Bearer Auth</h2>
+    </div>
+
+    <div class="overview-box" role="note" aria-label="Section 6 overview">
+      <strong>What we are testing:</strong> Can the app attach a Bearer token to a request?<br>
+      <strong>What is a Bearer token?</strong> It works like a keycard — you send it with every request to prove who you are. The server checks the token before giving you data.
+    </div>
+
+    <h3>Steps</h3>
+    <ol class="steps" aria-label="Steps">
+      <li>Find the <strong>Method</strong> dropdown and confirm it is set to <strong>GET</strong></li>
+      <li>Find the <strong>URL</strong> text field and type:
+        <p class="url-box"><code>https://httpbin.org/bearer</code></p>
+      </li>
+      <li>Navigate down the form to the group labelled <strong>"Auth"</strong> — your screen reader will announce "Auth group"</li>
+      <li>Inside the Auth group, find the <strong>Auth type</strong> dropdown and select <strong>Bearer</strong></li>
+      <li>Tab to the <strong>Token</strong> text field and type: <code>my-test-token-12345</code></li>
+      <li>Activate the <strong>Send</strong> button</li>
+    </ol>
+
+    <h3>Expected Response</h3>
+    <p>Status: <span class="status ok">200 OK</span></p>
+    <pre tabindex="0" aria-label="Expected response showing authenticated true and your token value">{
+  <span class="key">"authenticated"</span>: <span class="number">true</span>,
+  <span class="key">"token"</span>: <span class="string">"my-test-token-12345"</span>
+}</pre>
+
+    <h3>Pass / Fail Checklist</h3>
+    <table class="checklist">
+      <caption>Checklist for Section 6: Bearer Auth</caption>
+      <thead>
+        <tr><th scope="col">Check</th><th scope="col">Expected</th><th scope="col">Pass?</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Status code</td><td>200</td><td><input type="checkbox" aria-label="Section 6 check: Status code is 200" /></td></tr>
+        <tr><td>authenticated field in response is true</td><td>Yes</td><td><input type="checkbox" aria-label="Section 6 check: authenticated field is true" /></td></tr>
+        <tr><td>Token value in response matches what you typed</td><td>Yes</td><td><input type="checkbox" aria-label="Section 6 check: Token value matches what you entered" /></td></tr>
+      </tbody>
+    </table>
+    <a href="#toc" class="back-to-top" aria-label="Back to table of contents from Section 6">↑ Back to top</a>
+  </section>
+
+  <!-- ══════════════════════════════════════
+       SECTION 7
+  ══════════════════════════════════════ -->
+  <section id="s7" class="section-card" aria-labelledby="s7-title">
+    <div class="section-header">
+      <div class="section-number" aria-hidden="true">7</div>
+      <h2 id="s7-title">PUT — Update Data</h2>
+    </div>
+
+    <div class="overview-box" role="note" aria-label="Section 7 overview">
+      <strong>What we are testing:</strong> Can the app send a PUT request to replace an existing item?<br>
+      <strong>What is PUT?</strong> It replaces an entire item with new data you provide.
+    </div>
+
+    <h3>Steps</h3>
+    <ol class="steps" aria-label="Steps">
+      <li>Find the <strong>Method</strong> dropdown and change it to <strong>PUT</strong></li>
+      <li>Find the <strong>URL</strong> text field and type:
+        <p class="url-box"><code>https://jsonplaceholder.typicode.com/posts/1</code></p>
+      </li>
+      <li>Navigate down the form to the group labelled <strong>"Body"</strong> — your screen reader will announce "Body group"</li>
+      <li>Inside the Body group, find the <strong>Body mode</strong> dropdown and select <strong>Raw JSON</strong></li>
+      <li>Find the <strong>Raw JSON</strong> text area and type exactly this:
+        <pre tabindex="0" aria-label="JSON body to send: id 1, title Updated Title, body Updated content, userId 1">{
+  <span class="key">"id"</span>: <span class="number">1</span>,
+  <span class="key">"title"</span>: <span class="string">"Updated Title"</span>,
+  <span class="key">"body"</span>: <span class="string">"Updated content."</span>,
+  <span class="key">"userId"</span>: <span class="number">1</span>
+}</pre>
+      </li>
+      <li>Activate the <strong>Send</strong> button</li>
+    </ol>
+
+    <h3>Pass / Fail Checklist</h3>
+    <table class="checklist">
+      <caption>Checklist for Section 7: PUT Update Data</caption>
+      <thead>
+        <tr><th scope="col">Check</th><th scope="col">Expected</th><th scope="col">Pass?</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Status code</td><td>200</td><td><input type="checkbox" aria-label="Section 7 check: Status code is 200" /></td></tr>
+        <tr><td>Response contains the text Updated Title</td><td>Yes</td><td><input type="checkbox" aria-label="Section 7 check: Response contains Updated Title" /></td></tr>
+      </tbody>
+    </table>
+    <a href="#toc" class="back-to-top" aria-label="Back to table of contents from Section 7">↑ Back to top</a>
+  </section>
+
+  <!-- ══════════════════════════════════════
+       SECTION 8
+  ══════════════════════════════════════ -->
+  <section id="s8" class="section-card" aria-labelledby="s8-title">
+    <div class="section-header">
+      <div class="section-number" aria-hidden="true">8</div>
+      <h2 id="s8-title">DELETE Request</h2>
+    </div>
+
+    <div class="overview-box" role="note" aria-label="Section 8 overview">
+      <strong>What we are testing:</strong> Can the app send a DELETE request to remove an item?
+    </div>
+
+    <h3>Steps</h3>
+    <ol class="steps" aria-label="Steps">
+      <li>Find the <strong>Method</strong> dropdown and change it to <strong>DELETE</strong></li>
+      <li>Find the <strong>URL</strong> text field and type:
+        <p class="url-box"><code>https://jsonplaceholder.typicode.com/posts/1</code></p>
+      </li>
+      <li>No body is needed — DELETE requests do not normally send data</li>
+      <li>Activate the <strong>Send</strong> button</li>
+    </ol>
+
+    <h3>Expected Response</h3>
+    <p>Status: <span class="status ok">200 OK</span> · Response body: <code>{}</code> — empty curly braces, meaning the item was deleted and there is nothing to return.</p>
+
+    <h3>Pass / Fail Checklist</h3>
+    <table class="checklist">
+      <caption>Checklist for Section 8: DELETE Request</caption>
+      <thead>
+        <tr><th scope="col">Check</th><th scope="col">Expected</th><th scope="col">Pass?</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Status code</td><td>200</td><td><input type="checkbox" aria-label="Section 8 check: Status code is 200" /></td></tr>
+        <tr><td>Response body is empty curly braces</td><td>Yes</td><td><input type="checkbox" aria-label="Section 8 check: Response body is empty" /></td></tr>
+      </tbody>
+    </table>
+    <a href="#toc" class="back-to-top" aria-label="Back to table of contents from Section 8">↑ Back to top</a>
+  </section>
+
+  <!-- ══════════════════════════════════════
+       SECTION 9
+  ══════════════════════════════════════ -->
+  <section id="s9" class="section-card" aria-labelledby="s9-title">
+    <div class="section-header">
+      <div class="section-number" aria-hidden="true">9</div>
+      <h2 id="s9-title">404 Error Handling</h2>
+    </div>
+
+    <div class="overview-box" role="note" aria-label="Section 9 overview">
+      <strong>What we are testing:</strong> Does the app correctly show an error when a resource does not exist? The app should display the 404 status clearly and not crash.
+    </div>
+
+    <h3>Steps</h3>
+    <ol class="steps" aria-label="Steps">
+      <li>Find the <strong>Method</strong> dropdown and confirm it is set to <strong>GET</strong></li>
+      <li>Find the <strong>URL</strong> text field and type this address, which uses a post ID that does not exist:
+        <p class="url-box"><code>https://jsonplaceholder.typicode.com/posts/99999</code></p>
+      </li>
+      <li>Activate the <strong>Send</strong> button</li>
+    </ol>
+
+    <h3>Expected Response</h3>
+    <p>Status: <span class="status err">404 Not Found</span> · Response body: <code>{}</code></p>
+
+    <h3>Pass / Fail Checklist</h3>
+    <table class="checklist">
+      <caption>Checklist for Section 9: 404 Error Handling</caption>
+      <thead>
+        <tr><th scope="col">Check</th><th scope="col">Expected</th><th scope="col">Pass?</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Status code</td><td>404</td><td><input type="checkbox" aria-label="Section 9 check: Status code is 404" /></td></tr>
+        <tr><td>App displays the 404 status clearly</td><td>Yes</td><td><input type="checkbox" aria-label="Section 9 check: App displays 404 status clearly" /></td></tr>
+        <tr><td>App does not crash or freeze</td><td>Yes</td><td><input type="checkbox" aria-label="Section 9 check: App does not crash" /></td></tr>
+      </tbody>
+    </table>
+    <a href="#toc" class="back-to-top" aria-label="Back to table of contents from Section 9">↑ Back to top</a>
+  </section>
+
+  <!-- ══════════════════════════════════════
+       SECTION 10
+  ══════════════════════════════════════ -->
+  <section id="s10" class="section-card" aria-labelledby="s10-title">
+    <div class="section-header">
+      <div class="section-number" aria-hidden="true">10</div>
+      <h2 id="s10-title">Environment Variables</h2>
+    </div>
+
+    <div class="overview-box" role="note" aria-label="Section 10 overview">
+      <strong>What we are testing:</strong> Can the app store a reusable value and use it inside requests?<br>
+      <strong>Why use variables?</strong> Instead of typing the full base URL in every request, you save it once as a variable named <code>base_url</code>, then write <code>&#123;&#123;base_url&#125;&#125;</code> in your request. The app fills in the real value before sending.
+    </div>
+
+    <h3>Step A — Create the variable</h3>
+    <ol class="steps" aria-label="Steps">
+      <li>Activate <strong>Variables</strong> in the sidebar navigation</li>
+      <li>Find the <strong>Variable name</strong> text field and type: <code>base_url</code></li>
+      <li>Tab to the <strong>Variable value</strong> text field and type: <code>https://jsonplaceholder.typicode.com</code></li>
+      <li>Activate the <strong>Save variable</strong> button</li>
+    </ol>
+
+    <h3>Step B — Use the variable in a request</h3>
+    <ol class="steps" aria-label="Steps">
+      <li>Activate <strong>Requests</strong> in the sidebar navigation</li>
+      <li>Find the <strong>Method</strong> dropdown and confirm it is set to <strong>GET</strong></li>
+      <li>Find the <strong>URL</strong> text field and type the variable name in double curly braces instead of the full URL:
+        <p class="url-box"><code>&#123;&#123;base_url&#125;&#125;/posts/1</code></p>
+      </li>
+      <li>Activate the <strong>Send</strong> button — the app replaces <code>&#123;&#123;base_url&#125;&#125;</code> with the real URL before sending</li>
+    </ol>
+
+    <h3>Pass / Fail Checklist</h3>
+    <table class="checklist">
+      <caption>Checklist for Section 10: Environment Variables</caption>
+      <thead>
+        <tr><th scope="col">Check</th><th scope="col">Expected</th><th scope="col">Pass?</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Variable base_url was saved in the Variables section</td><td>Yes</td><td><input type="checkbox" aria-label="Section 10 check: Variable base_url was saved" /></td></tr>
+        <tr><td>Variable placeholder in URL was replaced and request was sent</td><td>Yes</td><td><input type="checkbox" aria-label="Section 10 check: Variable placeholder was resolved correctly" /></td></tr>
+        <tr><td>Status code</td><td>200</td><td><input type="checkbox" aria-label="Section 10 check: Status code is 200" /></td></tr>
+      </tbody>
+    </table>
+    <a href="#toc" class="back-to-top" aria-label="Back to table of contents from Section 10">↑ Back to top</a>
+  </section>
+
+  <!-- ══════════════════════════════════════
+       SECTION 11
+  ══════════════════════════════════════ -->
+  <section id="s11" class="section-card" aria-labelledby="s11-title">
+    <div class="section-header">
+      <div class="section-number" aria-hidden="true">11</div>
+      <h2 id="s11-title">Saving to Collections</h2>
+    </div>
+
+    <div class="overview-box" role="note" aria-label="Section 11 overview">
+      <strong>What we are testing:</strong> Can the app save a request and reopen it later?<br>
+      <strong>What is a Collection?</strong> A saved set of requests — like a bookmark folder for API calls. Instead of setting up the same request every time, you save it once and click to reopen it.
+    </div>
+
+    <h3>Step A — Save a request</h3>
+    <ol class="steps" aria-label="Steps">
+      <li>Activate <strong>Requests</strong> in the sidebar navigation</li>
+      <li>Find the <strong>Method</strong> dropdown and confirm it is set to <strong>GET</strong></li>
+      <li>Find the <strong>URL</strong> text field and type: <code>https://jsonplaceholder.typicode.com/posts/1</code></li>
+      <li>Find the <strong>Request name</strong> text field and type: <code>Get Post 1</code></li>
+      <li>Activate the <strong>Save</strong> button to save the request to the collection</li>
+      <li>Activate <strong>Collections</strong> in the sidebar — your saved request should appear in the list</li>
+    </ol>
+
+    <h3>Step B — Reopen the saved request</h3>
+    <ol class="steps" aria-label="Steps">
+      <li>In the Collections list, find and activate the item labelled <strong>Get Post 1</strong></li>
+      <li>The request loads into the form — your screen reader will move focus to the Requests area</li>
+      <li>Activate the <strong>Send</strong> button to confirm it still works</li>
+    </ol>
+
+    <h3>Pass / Fail Checklist</h3>
+    <table class="checklist">
+      <caption>Checklist for Section 11: Saving to Collections</caption>
+      <thead>
+        <tr><th scope="col">Check</th><th scope="col">Expected</th><th scope="col">Pass?</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Saved request appears in the Collections list</td><td>Yes</td><td><input type="checkbox" aria-label="Section 11 check: Request appears in Collections list" /></td></tr>
+        <tr><td>Reopened request has the correct URL</td><td>Yes</td><td><input type="checkbox" aria-label="Section 11 check: Reopened request has correct URL" /></td></tr>
+        <tr><td>Reopened request sends successfully with status 200</td><td>Yes</td><td><input type="checkbox" aria-label="Section 11 check: Reopened request sends successfully" /></td></tr>
+      </tbody>
+    </table>
+    <a href="#toc" class="back-to-top" aria-label="Back to table of contents from Section 11">↑ Back to top</a>
+  </section>
+
+  <!-- ══════════════════════════════════════
+       SECTION 12
+  ══════════════════════════════════════ -->
+  <section id="s12" class="section-card" aria-labelledby="s12-title">
+    <div class="section-header">
+      <div class="section-number" aria-hidden="true">12</div>
+      <h2 id="s12-title">Request History</h2>
+    </div>
+
+    <div class="overview-box" role="note" aria-label="Section 12 overview">
+      <strong>What we are testing:</strong> Does the app automatically record every request you send, so you can look back at them later?
+    </div>
+
+    <h3>Steps</h3>
+    <ol class="steps" aria-label="Steps">
+      <li>Activate <strong>History</strong> in the sidebar navigation</li>
+      <li>Navigate the history list — each item shows the HTTP method, URL, status code, and the time the request was sent</li>
+      <li>Activate any item in the history list — the request form will be filled in with that request's details so you can resend it</li>
+    </ol>
+
+    <h3>Pass / Fail Checklist</h3>
+    <table class="checklist">
+      <caption>Checklist for Section 12: Request History</caption>
+      <thead>
+        <tr><th scope="col">Check</th><th scope="col">Expected</th><th scope="col">Pass?</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Previous requests from earlier sections appear in the list</td><td>Yes</td><td><input type="checkbox" aria-label="Section 12 check: Previous requests appear in history" /></td></tr>
+        <tr><td>Each history entry shows method, URL, status code, and time</td><td>Yes</td><td><input type="checkbox" aria-label="Section 12 check: History entries show method URL status and time" /></td></tr>
+        <tr><td>Clicking a history item opens it in a request tab</td><td>Yes</td><td><input type="checkbox" aria-label="Section 12 check: Clicking history item opens it" /></td></tr>
+      </tbody>
+    </table>
+    <a href="#toc" class="back-to-top" aria-label="Back to table of contents from Section 12">↑ Back to top</a>
+  </section>
+
+  <!-- ══════════════════════════════════════
+       SECTION 13
+  ══════════════════════════════════════ -->
+  <section id="s13" class="section-card" aria-labelledby="s13-title">
+    <div class="section-header">
+      <div class="section-number" aria-hidden="true">13</div>
+      <h2 id="s13-title">Assertions</h2>
+    </div>
+
+    <div class="overview-box" role="note" aria-label="Section 13 overview">
+      <strong>What we are testing:</strong> Can the app automatically check the response against rules you define?<br>
+      <strong>What is an assertion?</strong> A rule you set before sending — for example "the status must be 200" or "the response must contain the word userId". After sending, the app checks these rules and tells you pass or fail automatically.
+    </div>
+
+    <h3>Step A — Set up passing assertions</h3>
+    <ol class="steps" aria-label="Steps">
+      <li>Activate <strong>Requests</strong> in the sidebar navigation</li>
+      <li>Find the <strong>Method</strong> dropdown and confirm it is set to <strong>GET</strong></li>
+      <li>Find the <strong>URL</strong> text field and type: <code>https://jsonplaceholder.typicode.com/posts/1</code></li>
+      <li>Navigate down the form to the group labelled <strong>"Assertions"</strong> — your screen reader will announce "Assertions group"</li>
+      <li>Inside the Assertions group, find the <strong>Expected status</strong> number field and type: <code>200</code></li>
+      <li>Find the <strong>Body contains</strong> text field and type: <code>userId</code></li>
+      <li>Activate the <strong>Send</strong> button — both assertions should show as passed in the Response section</li>
+    </ol>
+
+    <h3>Step B — Trigger a failing assertion</h3>
+    <ol class="steps" aria-label="Steps">
+      <li>Navigate back to the <strong>"Assertions"</strong> group and find the <strong>Expected status</strong> number field — change the value to: <code>999</code></li>
+      <li>Activate the <strong>Send</strong> button again — the status assertion should now show as failed in the Response section</li>
+    </ol>
+
+    <h3>Pass / Fail Checklist</h3>
+    <table class="checklist">
+      <caption>Checklist for Section 13: Assertions</caption>
+      <thead>
+        <tr><th scope="col">Check</th><th scope="col">Expected</th><th scope="col">Pass?</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Passing assertions are shown as "passed" in the Assertions result area</td><td>Yes</td><td><input type="checkbox" aria-label="Section 13 check: Passing assertions are shown as passed in the Assertions result area" /></td></tr>
+        <tr><td>The wrong status code 999 causes an assertion to fail</td><td>Yes</td><td><input type="checkbox" aria-label="Section 13 check: Wrong status code causes assertion failure" /></td></tr>
+        <tr><td>Summary count shows correct number of passed and failed</td><td>Yes</td><td><input type="checkbox" aria-label="Section 13 check: Summary count is correct" /></td></tr>
+      </tbody>
+    </table>
+    <a href="#toc" class="back-to-top" aria-label="Back to table of contents from Section 13">↑ Back to top</a>
+  </section>
+
+  <!-- ══════════════════════════════════════
+       SECTION 14
+  ══════════════════════════════════════ -->
+  <section id="s14" class="section-card" aria-labelledby="s14-title">
+    <div class="section-header">
+      <div class="section-number" aria-hidden="true">14</div>
+      <h2 id="s14-title">Collection Run</h2>
+    </div>
+
+    <div class="overview-box" role="note" aria-label="Section 14 overview">
+      <strong>What we are testing:</strong> Can the app run multiple saved requests in sequence automatically without you clicking Send each time?
+    </div>
+
+    <h3>Prepare — Add a second saved request</h3>
+    <ol class="steps" aria-label="Steps">
+      <li>Activate <strong>Requests</strong> in the sidebar navigation</li>
+      <li>Find the <strong>Method</strong> dropdown and confirm it is set to <strong>GET</strong></li>
+      <li>Find the <strong>URL</strong> text field and type: <code>https://jsonplaceholder.typicode.com/posts/2</code></li>
+      <li>Find the <strong>Request name</strong> text field and type: <code>Get Post 2</code></li>
+      <li>Activate the <strong>Save</strong> button to save to the collection</li>
+    </ol>
+
+    <h3>Run all saved requests</h3>
+    <ol class="steps" aria-label="Steps">
+      <li>Activate <strong>Collections</strong> in the sidebar</li>
+      <li>Activate the <strong>Run</strong> button in the Collections toolbar — the app will automatically send each saved request one by one</li>
+      <li>When all requests have been sent, the <strong>Run results</strong> section will be updated — navigate down to it to read the pass or fail result for each request</li>
+    </ol>
+
+    <h3>Pass / Fail Checklist</h3>
+    <table class="checklist">
+      <caption>Checklist for Section 14: Collection Run</caption>
+      <thead>
+        <tr><th scope="col">Check</th><th scope="col">Expected</th><th scope="col">Pass?</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>All requests ran automatically without manual clicking</td><td>Yes</td><td><input type="checkbox" aria-label="Section 14 check: All requests ran automatically" /></td></tr>
+        <tr><td>Results table shows each request and its outcome</td><td>Yes</td><td><input type="checkbox" aria-label="Section 14 check: Results table shows each request" /></td></tr>
+        <tr><td>Total passed and failed count is shown</td><td>Yes</td><td><input type="checkbox" aria-label="Section 14 check: Passed and failed count is shown" /></td></tr>
+      </tbody>
+    </table>
+    <a href="#toc" class="back-to-top" aria-label="Back to table of contents from Section 14">↑ Back to top</a>
+  </section>
+
+  <!-- ══════════════════════════════════════
+       SECTION 15
+  ══════════════════════════════════════ -->
+  <section id="s15" class="section-card" aria-labelledby="s15-title">
+    <div class="section-header">
+      <div class="section-number" aria-hidden="true">15</div>
+      <h2 id="s15-title">Exporting Collections</h2>
+    </div>
+
+    <div class="overview-box" role="note" aria-label="Section 15 overview">
+      <strong>What we are testing:</strong> Can the app export your saved requests so you can back them up or share them with others?
+    </div>
+
+    <h3>Steps</h3>
+    <ol class="steps" aria-label="Steps">
+      <li>Activate <strong>Collections</strong> in the sidebar</li>
+      <li>Activate the <strong>Export Postman</strong> button in the Collections toolbar — a file named <code>postman-collection.json</code> will download to your computer</li>
+      <li>Open that file in Notepad — you should see your saved requests written in Postman format</li>
+      <li>Return to the app and activate the <strong>Export JSON</strong> button in the same toolbar — a second file in the app's own format will download</li>
+    </ol>
+
+    <h3>Pass / Fail Checklist</h3>
+    <table class="checklist">
+      <caption>Checklist for Section 15: Exporting Collections</caption>
+      <thead>
+        <tr><th scope="col">Check</th><th scope="col">Expected</th><th scope="col">Pass?</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Postman export file downloaded successfully</td><td>Yes</td><td><input type="checkbox" aria-label="Section 15 check: Postman export file downloaded" /></td></tr>
+        <tr><td>Opened file in Notepad contains your saved requests</td><td>Yes</td><td><input type="checkbox" aria-label="Section 15 check: File contains saved requests" /></td></tr>
+        <tr><td>Native JSON export file also downloaded</td><td>Yes</td><td><input type="checkbox" aria-label="Section 15 check: Native JSON export downloaded" /></td></tr>
+      </tbody>
+    </table>
+    <a href="#toc" class="back-to-top" aria-label="Back to table of contents from Section 15">↑ Back to top</a>
+  </section>
+
+  <!-- ══════════════════════════════════════
+       SECTION 16
+  ══════════════════════════════════════ -->
+  <section id="s16" class="section-card" aria-labelledby="s16-title">
+    <div class="section-header">
+      <div class="section-number" aria-hidden="true">16</div>
+      <h2 id="s16-title">Mock Server</h2>
+    </div>
+
+    <div class="overview-box" role="note" aria-label="Section 16 overview">
+      <strong>What we are testing:</strong> Can the app simulate a fake API endpoint that returns data you define?<br>
+      <strong>What is a Mock Server?</strong> Sometimes the real API is not ready yet. A mock lets you create a fake endpoint that returns whatever you want — so you can test your work before the backend is built.
+    </div>
+
+    <h3>Step A — Create a mock route</h3>
+    <ol class="steps" aria-label="Steps">
+      <li>Activate <strong>Mock Server</strong> in the sidebar navigation — the Mock route editor form opens automatically</li>
+      <li>Find the <strong>Mock name</strong> text field and type: <code>Fake Users</code></li>
+      <li>Find the <strong>Method</strong> dropdown and select <strong>GET</strong></li>
+      <li>Find the <strong>Path under /mock</strong> text field and type: <code>/users</code></li>
+      <li>Find the <strong>Status</strong> number field and type: <code>200</code></li>
+      <li>Find the <strong>Response content type</strong> text field and type: <code>application/json</code></li>
+      <li>Find the <strong>Response body</strong> text area and type exactly this:
+        <pre tabindex="0" aria-label="Mock response body: array with two users Alice and Bob">[
+  <span class="punct">{</span> <span class="key">"id"</span>: <span class="number">1</span>, <span class="key">"name"</span>: <span class="string">"Alice"</span> <span class="punct">}</span>,
+  <span class="punct">{</span> <span class="key">"id"</span>: <span class="number">2</span>, <span class="key">"name"</span>: <span class="string">"Bob"</span> <span class="punct">}</span>
+]</pre>
+      </li>
+      <li>Activate the <strong>Save mock</strong> button</li>
+    </ol>
+
+    <h3>Step B — Send a request to the mock</h3>
+    <ol class="steps" aria-label="Steps">
+      <li>Activate <strong>Requests</strong> in the sidebar navigation</li>
+      <li>Find the <strong>Method</strong> dropdown and confirm it is set to <strong>GET</strong></li>
+      <li>Find the <strong>URL</strong> text field and type — this points to your local mock server, not the internet:
+        <p class="url-box"><code>http://127.0.0.1:5090/mock/users</code></p>
+      </li>
+      <li>Activate the <strong>Send</strong> button</li>
+    </ol>
+
+    <div class="callout tip" role="note" aria-label="Tip about the port number">
+      <div class="icon" aria-hidden="true">💡</div>
+      <div class="body">The port number <code>5090</code> is the default for the desktop app. If it does not work, check the port number shown in the console when the app starts and use that instead.</div>
+    </div>
+
+    <h3>Pass / Fail Checklist</h3>
+    <table class="checklist">
+      <caption>Checklist for Section 16: Mock Server</caption>
+      <thead>
+        <tr><th scope="col">Check</th><th scope="col">Expected</th><th scope="col">Pass?</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Mock route was saved in the Mock Server list</td><td>Yes</td><td><input type="checkbox" aria-label="Section 16 check: Mock route was saved" /></td></tr>
+        <tr><td>Request to the mock URL returned status 200</td><td>Yes</td><td><input type="checkbox" aria-label="Section 16 check: Mock request returned status 200" /></td></tr>
+        <tr><td>Response body shows Alice and Bob exactly as you typed</td><td>Yes</td><td><input type="checkbox" aria-label="Section 16 check: Response matches what you set in the mock" /></td></tr>
+      </tbody>
+    </table>
+    <a href="#toc" class="back-to-top" aria-label="Back to table of contents from Section 16">↑ Back to top</a>
+  </section>
+
+  <!-- ══════════════════════════════════════
+       SECTION 17
+  ══════════════════════════════════════ -->
+  <section id="s17" class="section-card" aria-labelledby="s17-title">
+    <div class="section-header">
+      <div class="section-number" aria-hidden="true">17</div>
+      <h2 id="s17-title">GraphQL Request</h2>
+    </div>
+
+    <div class="overview-box" role="note" aria-label="Section 17 overview">
+      <strong>What we are testing:</strong> Can the app send a GraphQL query using its dedicated GraphQL mode?<br>
+      <strong>What is GraphQL?</strong> An alternative to REST APIs where you describe exactly what fields of data you want. Instead of getting a whole record, you ask only for the specific fields you need.
+    </div>
+
+    <h3>Steps</h3>
+    <ol class="steps" aria-label="Steps">
+      <li>Find the <strong>Method</strong> dropdown and change it to <strong>POST</strong></li>
+      <li>Find the <strong>URL</strong> text field and type:
+        <p class="url-box"><code>https://countries.trevorblades.com/graphql</code></p>
+      </li>
+      <li>Navigate down the form to the group labelled <strong>"Body"</strong> — your screen reader will announce "Body group"</li>
+      <li>Inside the Body group, find the <strong>Body mode</strong> dropdown and select <strong>GraphQL</strong></li>
+      <li>Find the <strong>GraphQL query</strong> text area and type exactly this:
+        <pre tabindex="0" aria-label="GraphQL query asking for India country name capital and currency">query {
+  country(code: <span class="string">"IN"</span>) {
+    name
+    capital
+    currency
+  }
+}</pre>
+      </li>
+      <li>The <strong>GraphQL variables JSON</strong> text area can be left empty for this test</li>
+      <li>Activate the <strong>Send</strong> button</li>
+    </ol>
+
+    <h3>Expected Response</h3>
+    <p>Status: <span class="status ok">200 OK</span></p>
+    <pre tabindex="0" aria-label="Expected response: data containing country India with capital New Delhi and currency INR">{
+  <span class="key">"data"</span>: {
+    <span class="key">"country"</span>: {
+      <span class="key">"name"</span>: <span class="string">"India"</span>,
+      <span class="key">"capital"</span>: <span class="string">"New Delhi"</span>,
+      <span class="key">"currency"</span>: <span class="string">"INR"</span>
+    }
+  }
+}</pre>
+
+    <h3>Pass / Fail Checklist</h3>
+    <table class="checklist">
+      <caption>Checklist for Section 17: GraphQL Request</caption>
+      <thead>
+        <tr><th scope="col">Check</th><th scope="col">Expected</th><th scope="col">Pass?</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Status code</td><td>200</td><td><input type="checkbox" aria-label="Section 17 check: Status code is 200" /></td></tr>
+        <tr><td>Response contains country name India</td><td>Yes</td><td><input type="checkbox" aria-label="Section 17 check: Response contains country name India" /></td></tr>
+        <tr><td>Response contains capital New Delhi</td><td>Yes</td><td><input type="checkbox" aria-label="Section 17 check: Response contains capital New Delhi" /></td></tr>
+      </tbody>
+    </table>
+    <a href="#toc" class="back-to-top" aria-label="Back to table of contents from Section 17">↑ Back to top</a>
+  </section>
+
+  <!-- ══════════════════════════════════════
+       SECTION 18
+  ══════════════════════════════════════ -->
+  <section id="s18" class="section-card" aria-labelledby="s18-title">
+    <div class="section-header">
+      <div class="section-number" aria-hidden="true">18</div>
+      <h2 id="s18-title">Timeout Setting</h2>
+    </div>
+
+    <div class="overview-box" role="note" aria-label="Section 18 overview">
+      <strong>What we are testing:</strong> Does the app stop waiting and show an error when the server takes too long to respond? The app should not freeze.
+    </div>
+
+    <h3>Steps</h3>
+    <ol class="steps" aria-label="Steps">
+      <li>Activate <strong>Requests</strong> in the sidebar navigation</li>
+      <li>Find the <strong>Method</strong> dropdown and confirm it is set to <strong>GET</strong></li>
+      <li>Find the <strong>URL</strong> text field and type — this API is designed to wait 5 seconds before responding:
+        <p class="url-box"><code>https://httpbin.org/delay/5</code></p>
+      </li>
+      <li>Find the <strong>Timeout (s)</strong> number field and type: <code>1</code> — this tells the app to stop waiting after 1 second</li>
+      <li>Activate the <strong>Send</strong> button — the app should stop after about 1 second and show a timeout error in the Response section, not wait the full 5 seconds</li>
+    </ol>
+
+    <h3>Pass / Fail Checklist</h3>
+    <table class="checklist">
+      <caption>Checklist for Section 18: Timeout Setting</caption>
+      <thead>
+        <tr><th scope="col">Check</th><th scope="col">Expected</th><th scope="col">Pass?</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Timeout error message appears after about 1 second</td><td>Yes</td><td><input type="checkbox" aria-label="Section 18 check: Timeout error appears after 1 second" /></td></tr>
+        <tr><td>App stays responsive and does not freeze after the timeout</td><td>Yes</td><td><input type="checkbox" aria-label="Section 18 check: App stays responsive after timeout" /></td></tr>
+      </tbody>
+    </table>
+    <a href="#toc" class="back-to-top" aria-label="Back to table of contents from Section 18">↑ Back to top</a>
+  </section>
+
+  <!-- ══════════════════════════════════════
+       SECTION 19
+  ══════════════════════════════════════ -->
+  <section id="s19" class="section-card" aria-labelledby="s19-title">
+    <div class="section-header">
+      <div class="section-number" aria-hidden="true">19</div>
+      <h2 id="s19-title">Multiple Tabs</h2>
+    </div>
+
+    <div class="overview-box" role="note" aria-label="Section 19 overview">
+      <strong>What we are testing:</strong> Can the app keep multiple requests open at the same time in separate tabs without mixing them up?
+    </div>
+
+    <h3>Steps</h3>
+    <ol class="steps" aria-label="Steps">
+      <li>Activate <strong>Requests</strong> in the sidebar navigation</li>
+      <li>Find the <strong>URL</strong> text field and type: <code>https://jsonplaceholder.typicode.com/posts/1</code></li>
+      <li>Activate the <strong>Send</strong> button</li>
+      <li>Activate the <strong>New tab</strong> button — a second empty request tab will open</li>
+      <li>In the new tab, find the <strong>URL</strong> text field and type: <code>https://jsonplaceholder.typicode.com/users/1</code></li>
+      <li>Activate the <strong>Send</strong> button</li>
+      <li>Switch between the two tabs by activating each tab button at the top of the request area — confirm each tab keeps its own URL and response</li>
+    </ol>
+
+    <h3>Pass / Fail Checklist</h3>
+    <table class="checklist">
+      <caption>Checklist for Section 19: Multiple Tabs</caption>
+      <thead>
+        <tr><th scope="col">Check</th><th scope="col">Expected</th><th scope="col">Pass?</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Both tabs open and work independently</td><td>Yes</td><td><input type="checkbox" aria-label="Section 19 check: Both tabs open independently" /></td></tr>
+        <tr><td>Each tab shows its own correct response, not the other tab's</td><td>Yes</td><td><input type="checkbox" aria-label="Section 19 check: Each tab shows its own response" /></td></tr>
+        <tr><td>Switching between tabs works without errors</td><td>Yes</td><td><input type="checkbox" aria-label="Section 19 check: Switching tabs works without errors" /></td></tr>
+      </tbody>
+    </table>
+    <a href="#toc" class="back-to-top" aria-label="Back to table of contents from Section 19">↑ Back to top</a>
+  </section>
+
+  <!-- ══════════════════════════════════════
+       SECTION 20
+  ══════════════════════════════════════ -->
+  <section id="s20" class="section-card" aria-labelledby="s20-title">
+    <div class="section-header">
+      <div class="section-number" aria-hidden="true">20</div>
+      <h2 id="s20-title">Workspaces</h2>
+    </div>
+
+    <div class="overview-box" role="note" aria-label="Section 20 overview">
+      <strong>What we are testing:</strong> Can the app keep completely separate data for different projects?<br>
+      <strong>What is a Workspace?</strong> Like a separate project folder. Workspace A has its own collections, history, and variables — completely separate from Workspace B. You can switch between them any time.
+    </div>
+
+    <h3>Steps</h3>
+    <ol class="steps" aria-label="Steps">
+      <li>Activate <strong>Workspace</strong> in the sidebar navigation</li>
+      <li>Find the <strong>New workspace name</strong> text field and type: <code>Test Workspace</code></li>
+      <li>Activate the <strong>Create</strong> button — then find and activate the new <strong>Test Workspace</strong> entry in the list to switch to it</li>
+      <li>Activate <strong>Collections</strong> in the sidebar — the list should be empty because this is a fresh workspace</li>
+      <li>Activate <strong>Variables</strong> in the sidebar — also empty</li>
+      <li>Activate <strong>Workspace</strong> again and find and activate the <strong>Default</strong> workspace entry in the list to switch back</li>
+      <li>Activate <strong>Collections</strong> — your previously saved requests should still be there</li>
+    </ol>
+
+    <h3>Pass / Fail Checklist</h3>
+    <table class="checklist">
+      <caption>Checklist for Section 20: Workspaces</caption>
+      <thead>
+        <tr><th scope="col">Check</th><th scope="col">Expected</th><th scope="col">Pass?</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>New workspace was created successfully</td><td>Yes</td><td><input type="checkbox" aria-label="Section 20 check: New workspace was created" /></td></tr>
+        <tr><td>New workspace has an empty collections list</td><td>Yes</td><td><input type="checkbox" aria-label="Section 20 check: New workspace has empty collections" /></td></tr>
+        <tr><td>Switching back to Default workspace still shows your saved data</td><td>Yes</td><td><input type="checkbox" aria-label="Section 20 check: Default workspace data is still intact" /></td></tr>
+      </tbody>
+    </table>
+    <a href="#toc" class="back-to-top" aria-label="Back to table of contents from Section 20">↑ Back to top</a>
+  </section>
+
+  <hr />
+
+  <!-- ══════════════════════════════════════
+       SUMMARY
+  ══════════════════════════════════════ -->
+  <section id="summary" aria-labelledby="summary-heading">
+    <h2 id="summary-heading">Summary Results Table</h2>
+    <p>Fill this in as you complete each section. Use it as your final test report. Select Pass, Fail, or Skipped for each section and add any notes.</p>
+
+    <div class="callout warn" role="note" aria-label="Warning about saving your results">
+      <div class="icon" aria-hidden="true">⚠️</div>
+      <div class="body"><strong>Your selections are not saved automatically.</strong> Take a screenshot or copy your notes before closing this page.</div>
+    </div>
+
+    <table class="result-table">
+      <caption>Test results summary for all 20 sections</caption>
+      <thead>
+        <tr>
+          <th scope="col">#</th>
+          <th scope="col">Feature</th>
+          <th scope="col">Result</th>
+          <th scope="col">Notes</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>1</td><td>Basic GET</td>
+          <td><label for="r1" class="visually-hidden">Section 1 Basic GET result</label><select id="r1" aria-label="Section 1 Basic GET: select result"><option value="">— select —</option><option>Pass</option><option>Fail</option><option>Skipped</option></select></td>
+          <td><input type="text" aria-label="Section 1 Basic GET: notes" placeholder="Notes..." /></td>
+        </tr>
+        <tr><td>2</td><td>GET List</td>
+          <td><select aria-label="Section 2 GET List: select result"><option value="">— select —</option><option>Pass</option><option>Fail</option><option>Skipped</option></select></td>
+          <td><input type="text" aria-label="Section 2 GET List: notes" placeholder="Notes..." /></td>
+        </tr>
+        <tr><td>3</td><td>POST — Create</td>
+          <td><select aria-label="Section 3 POST Create: select result"><option value="">— select —</option><option>Pass</option><option>Fail</option><option>Skipped</option></select></td>
+          <td><input type="text" aria-label="Section 3 POST Create: notes" placeholder="Notes..." /></td>
+        </tr>
+        <tr><td>4</td><td>Query Parameters</td>
+          <td><select aria-label="Section 4 Query Parameters: select result"><option value="">— select —</option><option>Pass</option><option>Fail</option><option>Skipped</option></select></td>
+          <td><input type="text" aria-label="Section 4 Query Parameters: notes" placeholder="Notes..." /></td>
+        </tr>
+        <tr><td>5</td><td>Custom Headers</td>
+          <td><select aria-label="Section 5 Custom Headers: select result"><option value="">— select —</option><option>Pass</option><option>Fail</option><option>Skipped</option></select></td>
+          <td><input type="text" aria-label="Section 5 Custom Headers: notes" placeholder="Notes..." /></td>
+        </tr>
+        <tr><td>6</td><td>Bearer Auth</td>
+          <td><select aria-label="Section 6 Bearer Auth: select result"><option value="">— select —</option><option>Pass</option><option>Fail</option><option>Skipped</option></select></td>
+          <td><input type="text" aria-label="Section 6 Bearer Auth: notes" placeholder="Notes..." /></td>
+        </tr>
+        <tr><td>7</td><td>PUT — Update</td>
+          <td><select aria-label="Section 7 PUT Update: select result"><option value="">— select —</option><option>Pass</option><option>Fail</option><option>Skipped</option></select></td>
+          <td><input type="text" aria-label="Section 7 PUT Update: notes" placeholder="Notes..." /></td>
+        </tr>
+        <tr><td>8</td><td>DELETE</td>
+          <td><select aria-label="Section 8 DELETE: select result"><option value="">— select —</option><option>Pass</option><option>Fail</option><option>Skipped</option></select></td>
+          <td><input type="text" aria-label="Section 8 DELETE: notes" placeholder="Notes..." /></td>
+        </tr>
+        <tr><td>9</td><td>404 Error Handling</td>
+          <td><select aria-label="Section 9 404 Error Handling: select result"><option value="">— select —</option><option>Pass</option><option>Fail</option><option>Skipped</option></select></td>
+          <td><input type="text" aria-label="Section 9 404 Error Handling: notes" placeholder="Notes..." /></td>
+        </tr>
+        <tr><td>10</td><td>Environment Variables</td>
+          <td><select aria-label="Section 10 Environment Variables: select result"><option value="">— select —</option><option>Pass</option><option>Fail</option><option>Skipped</option></select></td>
+          <td><input type="text" aria-label="Section 10 Environment Variables: notes" placeholder="Notes..." /></td>
+        </tr>
+        <tr><td>11</td><td>Collections</td>
+          <td><select aria-label="Section 11 Collections: select result"><option value="">— select —</option><option>Pass</option><option>Fail</option><option>Skipped</option></select></td>
+          <td><input type="text" aria-label="Section 11 Collections: notes" placeholder="Notes..." /></td>
+        </tr>
+        <tr><td>12</td><td>History</td>
+          <td><select aria-label="Section 12 History: select result"><option value="">— select —</option><option>Pass</option><option>Fail</option><option>Skipped</option></select></td>
+          <td><input type="text" aria-label="Section 12 History: notes" placeholder="Notes..." /></td>
+        </tr>
+        <tr><td>13</td><td>Assertions</td>
+          <td><select aria-label="Section 13 Assertions: select result"><option value="">— select —</option><option>Pass</option><option>Fail</option><option>Skipped</option></select></td>
+          <td><input type="text" aria-label="Section 13 Assertions: notes" placeholder="Notes..." /></td>
+        </tr>
+        <tr><td>14</td><td>Collection Run</td>
+          <td><select aria-label="Section 14 Collection Run: select result"><option value="">— select —</option><option>Pass</option><option>Fail</option><option>Skipped</option></select></td>
+          <td><input type="text" aria-label="Section 14 Collection Run: notes" placeholder="Notes..." /></td>
+        </tr>
+        <tr><td>15</td><td>Export</td>
+          <td><select aria-label="Section 15 Export: select result"><option value="">— select —</option><option>Pass</option><option>Fail</option><option>Skipped</option></select></td>
+          <td><input type="text" aria-label="Section 15 Export: notes" placeholder="Notes..." /></td>
+        </tr>
+        <tr><td>16</td><td>Mock Server</td>
+          <td><select aria-label="Section 16 Mock Server: select result"><option value="">— select —</option><option>Pass</option><option>Fail</option><option>Skipped</option></select></td>
+          <td><input type="text" aria-label="Section 16 Mock Server: notes" placeholder="Notes..." /></td>
+        </tr>
+        <tr><td>17</td><td>GraphQL</td>
+          <td><select aria-label="Section 17 GraphQL: select result"><option value="">— select —</option><option>Pass</option><option>Fail</option><option>Skipped</option></select></td>
+          <td><input type="text" aria-label="Section 17 GraphQL: notes" placeholder="Notes..." /></td>
+        </tr>
+        <tr><td>18</td><td>Timeout</td>
+          <td><select aria-label="Section 18 Timeout: select result"><option value="">— select —</option><option>Pass</option><option>Fail</option><option>Skipped</option></select></td>
+          <td><input type="text" aria-label="Section 18 Timeout: notes" placeholder="Notes..." /></td>
+        </tr>
+        <tr><td>19</td><td>Multiple Tabs</td>
+          <td><select aria-label="Section 19 Multiple Tabs: select result"><option value="">— select —</option><option>Pass</option><option>Fail</option><option>Skipped</option></select></td>
+          <td><input type="text" aria-label="Section 19 Multiple Tabs: notes" placeholder="Notes..." /></td>
+        </tr>
+        <tr><td>20</td><td>Workspaces</td>
+          <td><select aria-label="Section 20 Workspaces: select result"><option value="">— select —</option><option>Pass</option><option>Fail</option><option>Skipped</option></select></td>
+          <td><input type="text" aria-label="Section 20 Workspaces: notes" placeholder="Notes..." /></td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <hr />
+
+  <!-- ══════════════════════════════════════
+       TROUBLESHOOTING
+  ══════════════════════════════════════ -->
+  <section id="troubleshoot" aria-labelledby="troubleshoot-heading">
+    <h2 id="troubleshoot-heading">Common Problems and Solutions</h2>
+    <table>
+      <caption>Troubleshooting guide for common errors</caption>
+      <thead>
+        <tr><th scope="col">Problem</th><th scope="col">Likely cause</th><th scope="col">Solution</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Invalid URL error</td><td>URL is missing https://</td><td>Add https:// at the very start of the URL</td></tr>
+        <tr><td>Response is empty</td><td>Wrong method used</td><td>Check whether you should be using GET instead of POST</td></tr>
+        <tr><td>401 Unauthorized</td><td>Missing or wrong token</td><td>Navigate to the "Auth" group in the request form and make sure the "Auth type" is set to Bearer and a token is entered in the "Token" field</td></tr>
+        <tr><td>Request timed out</td><td>Server is slow or URL is wrong</td><td>Increase the timeout value in Settings or check the URL</td></tr>
+        <tr><td>Variable not resolved — double curly braces still show in URL</td><td>Variable name is misspelled</td><td>Go to Variables and check the spelling — it must match exactly</td></tr>
+        <tr><td>Mock request returns 404</td><td>Wrong path or method in the mock</td><td>Check that the mock path and method match your request exactly</td></tr>
+        <tr><td>App window does not open</td><td>Script did not run</td><td>Open PowerShell from the app folder and run <code>.\run-desktop.ps1</code></td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <hr />
+
+  <!-- ══════════════════════════════════════
+       FREE APIS
+  ══════════════════════════════════════ -->
+  <section id="apis" aria-labelledby="apis-heading">
+    <h2 id="apis-heading">Free APIs Used in This Manual</h2>
+    <p>All APIs below are completely free and require no account or API key to use.</p>
+    <table>
+      <caption>Free public APIs used in this manual</caption>
+      <thead>
+        <tr><th scope="col">API name</th><th scope="col">Base URL</th><th scope="col">What it does</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>JSONPlaceholder</td><td><code>https://jsonplaceholder.typicode.com</code></td><td>Fake REST API with posts, users, and todos. Safe to call with any method.</td></tr>
+        <tr><td>HTTPBin</td><td><code>https://httpbin.org</code></td><td>Echoes back your request details — perfect for testing headers, auth, and body.</td></tr>
+        <tr><td>Countries GraphQL</td><td><code>https://countries.trevorblades.com/graphql</code></td><td>Country data via GraphQL — used to test GraphQL mode.</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <p style="margin-top: 48px; padding-top: 24px; border-top: 1px solid var(--border); color: var(--muted); font-size: 13px;">
+    Manual version 2.0 · Accessible API Tester · 20 test sections
+  </p>
+
+</main>
+</body>
+</html>
