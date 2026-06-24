@@ -2,7 +2,18 @@ namespace AccessibleApiTester.Desktop;
 
 static class DesktopLog
 {
-    private static readonly string LogPath = Path.Combine(AppContext.BaseDirectory, "desktop-host.log");
+    // Write to a per-user writable location. AppContext.BaseDirectory is the
+    // install folder, which is read-only when installed under Program Files.
+    private static readonly string LogPath = BuildLogPath();
+
+    private static string BuildLogPath()
+    {
+        var dir = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            "AccessibleApiTester");
+        Directory.CreateDirectory(dir);
+        return Path.Combine(dir, "desktop-host.log");
+    }
 
     public static void Write(string message)
     {

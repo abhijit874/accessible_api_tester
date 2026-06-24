@@ -42,7 +42,7 @@ $iscc = @(
 if (-not $iscc) {
     Write-Warning "Inno Setup (ISCC.exe) not found. Install it from https://jrsoftware.org/isdl.php"
     Write-Warning "or run:  winget install --id JRSoftware.InnoSetup -e"
-    Write-Warning "The self-contained app is ready in .\publish — re-run this script after installing Inno Setup."
+    Write-Warning "The self-contained app is ready in .\publish - re-run this script after installing Inno Setup."
     return
 }
 

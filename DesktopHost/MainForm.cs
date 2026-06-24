@@ -29,7 +29,20 @@ sealed class MainForm : Form
     {
         try
         {
-            await webView.EnsureCoreWebView2Async();
+            // WebView2 defaults its cache to a folder next to the .exe. When the
+            // app is installed under Program Files that location is read-only for
+            // normal users and EnsureCoreWebView2Async fails with "Access denied".
+            // Point the user-data folder at a writable per-user location instead.
+            var userDataFolder = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                "AccessibleApiTester",
+                "WebView2");
+            Directory.CreateDirectory(userDataFolder);
+            var environment = await CoreWebView2Environment.CreateAsync(
+                browserExecutableFolder: null,
+                userDataFolder: userDataFolder,
+                options: null);
+            await webView.EnsureCoreWebView2Async(environment);
             webView.CoreWebView2.DocumentTitleChanged += (_, _) =>
             {
                 var title = webView.CoreWebView2.DocumentTitle;
