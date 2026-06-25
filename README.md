@@ -1,6 +1,20 @@
 # Accessible API Tester
 
-Accessible API Tester is a local web and desktop tool for sending HTTP requests, saving collections, managing variables, and serving mock API responses.
+Accessible API Tester is a local web and desktop tool for sending HTTP requests, saving collections, managing variables, and serving mock API responses. It is built with accessibility as a first-class goal — full keyboard support and screen-reader announcements throughout.
+
+## Download (Windows)
+
+Grab the latest installer from the releases page — no developer tools required:
+
+**➡ [Download the latest release](https://github.com/abhijit874/accessible_api_tester/releases/latest)**
+
+1. Download `AccessibleApiTester-Setup-1.0.0.exe`.
+2. Windows may show **"Windows protected your PC"** because the installer isn't code-signed yet — click **More info → Run anyway**. This is expected and safe.
+3. Launch **Accessible API Tester** from the Start Menu.
+
+Requires Windows 10/11. The Microsoft Edge WebView2 Runtime is already built into Windows 11; nothing else to install.
+
+> The sections below are for **developers** who want to build or run from source.
 
 ## Requirements
 
