@@ -84,7 +84,7 @@ export function CollectionsPanel({
   deleteItem,
 }) {
   return (
-    <PanelList title="Collections" className="collections-panel" action={<div className="toolbar-actions"><IconButton type="button" icon={<Play />} disabled={isRunningCollection} onClick={runCollection}>Run</IconButton><IconButton type="button" icon={<Download />} onClick={exportCollections}>Export JSON</IconButton><IconButton type="button" icon={<Download />} onClick={exportPostmanCollections}>Export Postman</IconButton></div>}>
+    <PanelList title="Collections" className="collections-panel" action={<div className="toolbar-actions"><IconButton type="button" icon={<Play />} disabled={isRunningCollection} onClick={() => runCollection()}>Run</IconButton><IconButton type="button" icon={<Download />} onClick={exportCollections}>Export JSON</IconButton><IconButton type="button" icon={<Download />} onClick={exportPostmanCollections}>Export Postman</IconButton></div>}>
       <div className="import-row">
         <label className="file-button" htmlFor="importCollections"><FileUp aria-hidden="true" size="18" /> Import JSON / Postman / Insomnia</label>
         <input id="importCollections" ref={fileRef} className="visually-hidden" type="file" accept="application/json,.json" onChange={importCollections} />

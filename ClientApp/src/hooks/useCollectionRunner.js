@@ -35,9 +35,13 @@ export function useCollectionRunner(ctx) {
   }
 
   async function runCollection(items = collections) {
-    const runnable = items.filter(item => includedInRun.has(item.id));
+    // Run only the ticked requests; if the user ticked none, run everything
+    // passed in (all requests for the top button, a folder's requests for a
+    // folder's Run button) — matching the Postman-style "Run" expectation.
+    const selected = items.filter(item => includedInRun.has(item.id));
+    const runnable = selected.length ? selected : items;
     if (!runnable.length) {
-      announce("No requests selected to run. Check at least one request.", "error");
+      announce("No saved requests to run. Save a request to this collection first.", "error");
       return;
     }
     setIsRunningCollection(true);
