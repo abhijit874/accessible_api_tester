@@ -3,7 +3,7 @@
 ; Expects a self-contained publish in the "publish" folder (see publish.ps1).
 
 #define AppName "Accessible API Tester"
-#define AppVersion "1.0.0"
+#define AppVersion "1.1.0"
 #define AppPublisher "Accessible API Tester"
 #define AppExeName "AccessibleApiTester.Desktop.exe"
 #define PublishDir "..\publish"
@@ -32,6 +32,12 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 
 [Tasks]
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
+
+[InstallDelete]
+; Remove the previous build's hashed frontend bundles before copying the new ones,
+; so upgrades don't leave orphaned index-*.js/css files behind. (App data lives in
+; the user profile, not here, so wiping wwwroot\assets is safe.)
+Type: filesandordirs; Name: "{app}\wwwroot\assets"
 
 [Files]
 ; Recursively bundle the entire self-contained publish output.
