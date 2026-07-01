@@ -119,7 +119,7 @@ sealed class MySqlRequestStore : IAppStateStore
             var history = new List<SavedHistoryItem>();
             await using (var command = new MySqlCommand(
                 """
-                SELECT id, method, url, headers, content_type, body, status_code, request_time, auth_type, auth_token, auth_key_name, auth_key_in
+                SELECT id, method, url, headers, content_type, body, status_code, request_time, auth_type, auth_token, auth_key_name, auth_key_in, response_status_text, response_duration_ms, response_headers, response_body, response_is_base64
                 FROM request_history
                 WHERE workspace_id = @workspaceId
                 ORDER BY sort_order;
@@ -142,7 +142,12 @@ sealed class MySqlRequestStore : IAppStateStore
                         ReadString(reader, "auth_type"),
                         ReadString(reader, "auth_token"),
                         ReadString(reader, "auth_key_name"),
-                        ReadString(reader, "auth_key_in")));
+                        ReadString(reader, "auth_key_in"),
+                        ReadNullableString(reader, "response_status_text"),
+                        ReadNullableLong(reader, "response_duration_ms"),
+                        ReadHeaders(reader, "response_headers"),
+                        ReadNullableString(reader, "response_body"),
+                        ReadBool(reader, "response_is_base64")));
                 }
             }
 
@@ -340,7 +345,7 @@ sealed class MySqlRequestStore : IAppStateStore
 
             await using var command = new MySqlCommand(
                 $"""
-                SELECT id, method, url, headers, content_type, body, status_code, request_time, auth_type, auth_token, auth_key_name, auth_key_in
+                SELECT id, method, url, headers, content_type, body, status_code, request_time, auth_type, auth_token, auth_key_name, auth_key_in, response_status_text, response_duration_ms, response_headers, response_body, response_is_base64
                 FROM request_history
                 {whereClause}
                 ORDER BY sort_order
@@ -365,7 +370,12 @@ sealed class MySqlRequestStore : IAppStateStore
                     ReadString(reader, "auth_type"),
                     ReadString(reader, "auth_token"),
                     ReadString(reader, "auth_key_name"),
-                    ReadString(reader, "auth_key_in")));
+                    ReadString(reader, "auth_key_in"),
+                    ReadNullableString(reader, "response_status_text"),
+                    ReadNullableLong(reader, "response_duration_ms"),
+                    ReadHeaders(reader, "response_headers"),
+                    ReadNullableString(reader, "response_body"),
+                    ReadBool(reader, "response_is_base64")));
             }
 
             return new PagedResult<SavedHistoryItem>(items.ToArray(), total, skip, take);
@@ -443,12 +453,12 @@ sealed class MySqlRequestStore : IAppStateStore
         await ExecuteInTransactionAsync(async (connection, transaction) =>
         {
             await EnsureWorkspaceAsync(connection, transaction, new WorkspaceItem(normalizedWorkspaceId, normalizedWorkspaceId == "default" ? "Default" : normalizedWorkspaceId, DateTimeOffset.UtcNow.ToString("O")), cancellationToken);
-            await ExecuteAsync(connection, transaction, "DELETE FROM request_history WHERE workspace_id = @workspaceId AND (id = @id OR (LOWER(method) = LOWER(@method) AND url = @url));", cancellationToken, command =>
+            // Only replace an entry with the same id (idempotent upsert). Same URL+method
+            // is intentionally kept as a separate entry so an old response is never overwritten.
+            await ExecuteAsync(connection, transaction, "DELETE FROM request_history WHERE workspace_id = @workspaceId AND id = @id;", cancellationToken, command =>
             {
                 command.Parameters.AddWithValue("@workspaceId", normalizedWorkspaceId);
                 command.Parameters.AddWithValue("@id", item.Id);
-                command.Parameters.AddWithValue("@method", item.Method);
-                command.Parameters.AddWithValue("@url", item.Url);
             });
             await ExecuteAsync(connection, transaction, "UPDATE request_history SET sort_order = sort_order + 1 WHERE workspace_id = @workspaceId;", cancellationToken, command => command.Parameters.AddWithValue("@workspaceId", normalizedWorkspaceId));
             await InsertHistoryAsync(connection, transaction, normalizedWorkspaceId, item, 0, cancellationToken);
@@ -622,9 +632,9 @@ sealed class MySqlRequestStore : IAppStateStore
         await using var command = new MySqlCommand(
             """
             INSERT INTO request_history
-                (id, workspace_id, method, url, headers, content_type, body, status_code, request_time, auth_type, auth_token, auth_key_name, auth_key_in, sort_order)
+                (id, workspace_id, method, url, headers, content_type, body, status_code, request_time, auth_type, auth_token, auth_key_name, auth_key_in, response_status_text, response_duration_ms, response_headers, response_body, response_is_base64, sort_order)
             VALUES
-                (@id, @workspaceId, @method, @url, @headers, @contentType, @body, @status, @requestTime, @authType, @authToken, @authKeyName, @authKeyIn, @sortOrder);
+                (@id, @workspaceId, @method, @url, @headers, @contentType, @body, @status, @requestTime, @authType, @authToken, @authKeyName, @authKeyIn, @responseStatusText, @responseDurationMs, @responseHeaders, @responseBody, @responseIsBase64, @sortOrder);
             """,
             connection,
             transaction);
@@ -641,6 +651,11 @@ sealed class MySqlRequestStore : IAppStateStore
         command.Parameters.AddWithValue("@authToken", item.AuthToken ?? string.Empty);
         command.Parameters.AddWithValue("@authKeyName", item.AuthKeyName ?? string.Empty);
         command.Parameters.AddWithValue("@authKeyIn", item.AuthKeyIn ?? "header");
+        command.Parameters.AddWithValue("@responseStatusText", (object?)item.ResponseStatusText ?? DBNull.Value);
+        command.Parameters.AddWithValue("@responseDurationMs", (object?)item.ResponseDurationMs ?? DBNull.Value);
+        command.Parameters.AddWithValue("@responseHeaders", item.ResponseHeaders is null ? DBNull.Value : JsonSerializer.Serialize(item.ResponseHeaders));
+        command.Parameters.AddWithValue("@responseBody", (object?)item.ResponseBody ?? DBNull.Value);
+        command.Parameters.AddWithValue("@responseIsBase64", item.ResponseIsBase64 ? 1 : 0);
         command.Parameters.AddWithValue("@sortOrder", sortOrder);
         await command.ExecuteNonQueryAsync(cancellationToken);
     }
@@ -882,6 +897,42 @@ sealed class MySqlRequestStore : IAppStateStore
     {
         var ordinal = reader.GetOrdinal(name);
         return reader.IsDBNull(ordinal) ? null : reader.GetInt32(ordinal);
+    }
+
+    private static long? ReadNullableLong(MySqlDataReader reader, string name)
+    {
+        var ordinal = reader.GetOrdinal(name);
+        return reader.IsDBNull(ordinal) ? null : reader.GetInt64(ordinal);
+    }
+
+    private static string? ReadNullableString(MySqlDataReader reader, string name)
+    {
+        var ordinal = reader.GetOrdinal(name);
+        return reader.IsDBNull(ordinal) ? null : reader.GetString(ordinal);
+    }
+
+    private static bool ReadBool(MySqlDataReader reader, string name)
+    {
+        var ordinal = reader.GetOrdinal(name);
+        return !reader.IsDBNull(ordinal) && reader.GetBoolean(ordinal);
+    }
+
+    private static ApiHeader[]? ReadHeaders(MySqlDataReader reader, string name)
+    {
+        var json = ReadString(reader, name);
+        if (string.IsNullOrWhiteSpace(json) || string.Equals(json, "null", StringComparison.OrdinalIgnoreCase))
+        {
+            return null;
+        }
+
+        try
+        {
+            return JsonSerializer.Deserialize<ApiHeader[]>(json);
+        }
+        catch (JsonException)
+        {
+            return null;
+        }
     }
 
     private static RequestAssertions? ReadAssertions(MySqlDataReader reader, string name)

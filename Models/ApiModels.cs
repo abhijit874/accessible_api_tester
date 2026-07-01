@@ -26,7 +26,12 @@ record SavedHistoryItem(
     string? AuthType = null,
     string? AuthToken = null,
     string? AuthKeyName = null,
-    string? AuthKeyIn = null);
+    string? AuthKeyIn = null,
+    string? ResponseStatusText = null,
+    long? ResponseDurationMs = null,
+    ApiHeader[]? ResponseHeaders = null,
+    string? ResponseBody = null,
+    bool ResponseIsBase64 = false);
 record SavedRequestItem(
     string Id,
     string Name,

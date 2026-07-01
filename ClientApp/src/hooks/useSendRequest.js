@@ -2,6 +2,7 @@ import {
   buildRequest, buildAssertions, evaluateAssertions, runCaptures, normalizeAssertions,
   inferBodyMode, fileToBase64, getCookiesForUrl, updateCookieJar, isStateChangingLocalMockRequest,
   applyVarChangesToList, createId, applyFolderInheritance, defaultAssertionSummary, extForMime,
+  setStorageJson,
 } from "../utils.js";
 import { runPreRequestScript, runPostResponseScript, buildScriptSendResponse } from "../scriptEngine.js";
 
@@ -202,11 +203,18 @@ export function useSendRequest(ctx) {
         authType: historyAuthType,
         authToken: historyAuthType !== "none" ? apiRequest.authToken : "",
         authKeyName: historyAuthType === "apikey" ? inheritedRequest.authKeyName : "",
-        authKeyIn: historyAuthType === "apikey" ? (inheritedRequest.authKeyIn || "header") : "header"
+        authKeyIn: historyAuthType === "apikey" ? (inheritedRequest.authKeyIn || "header") : "header",
+        responseStatusText: result.statusText ?? "",
+        responseDurationMs: result.durationMs ?? 0,
+        responseHeaders: Array.isArray(result.headers) ? result.headers : [],
+        responseBody: result.body ?? "",
+        responseIsBase64: result.isBase64 || false
       };
-      const nextHistory = [historyItem, ...history.filter(e => e.url !== historyItem.url || e.method !== historyItem.method)].slice(0, 100);
+      // Every send is its own entry — do not collapse same URL+method, so a prior
+      // response is never overwritten. Entries persist until explicitly cleared.
+      const nextHistory = [historyItem, ...history].slice(0, 100);
       setHistory(nextHistory);
-      localStorage.setItem(workspaceStorageKey("history"), JSON.stringify(nextHistory));
+      setStorageJson(workspaceStorageKey("history"), nextHistory);
       putItem(workspaceQuery(`/api/history/${encodeURIComponent(historyItem.id)}`), historyItem);
 
       if (isStateChangingLocalMockRequest(apiRequest)) await refreshMocksFromStore();
