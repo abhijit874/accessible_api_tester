@@ -82,6 +82,18 @@ export function useCollectionActions(ctx) {
     const storedParamRows = parseParamRows(item.params || "").filter(row => row && (row.name || row.value));
     const mergedParamRows = [...urlParamRows, ...storedParamRows];
     const paramRows = mergedParamRows.length ? mergedParamRows : [{ enabled: true, name: "", value: "" }];
+    // History entries carry the response that was received; rebuild it so the
+    // response panel shows it without re-sending. (Saved collection items have
+    // no stored response and fall through with restoredResponse = null.)
+    const hasStoredResponse = item.responseStatusText != null || item.responseBody != null || Array.isArray(item.responseHeaders);
+    const restoredResponse = hasStoredResponse ? {
+      status: item.status,
+      statusText: item.responseStatusText || "",
+      durationMs: item.responseDurationMs || 0,
+      headers: Array.isArray(item.responseHeaders) ? item.responseHeaders : [],
+      body: item.responseBody || "",
+      isBase64: item.responseIsBase64 || false
+    } : null;
     openRequestTab({
       name: item.name || "", folder,
       method: item.method || "GET", url: baseUrl + buildBarQuery(paramRows),
@@ -100,8 +112,10 @@ export function useCollectionActions(ctx) {
       postResponseScript: item.postResponseScript || "",
       description: item.description || "",
       timeoutSeconds: item.timeoutMs ? String(item.timeoutMs / 1000) : ""
-    });
-    announce(`Opened ${item.name || item.url} in a request tab.`);
+    }, restoredResponse ? { response: restoredResponse, effectiveUrl: item.url } : {});
+    announce(restoredResponse
+      ? `Opened ${item.name || item.url} in a request tab with its saved response.`
+      : `Opened ${item.name || item.url} in a request tab.`);
   }
 
   function duplicateCollectionItem(item) {

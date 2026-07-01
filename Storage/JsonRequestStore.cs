@@ -126,10 +126,10 @@ sealed class JsonRequestStore(ILogger<JsonRequestStore> logger, IConfiguration c
     public Task UpsertHistoryAsync(string workspaceId, SavedHistoryItem item, CancellationToken cancellationToken) =>
         UpdateStateAsync(workspaceId, state => state with
         {
-            History = [item, .. state.History.Where(existing =>
-                existing.Id != item.Id &&
-                (!string.Equals(existing.Method, item.Method, StringComparison.OrdinalIgnoreCase) ||
-                 !string.Equals(existing.Url, item.Url, StringComparison.OrdinalIgnoreCase)))]
+            // Keep every send as its own entry (dedupe only on the item's own id for
+            // idempotent upserts); a prior response is never overwritten by a later
+            // send of the same URL+method. Cap at 100 to match the MySQL store.
+            History = [item, .. state.History.Where(existing => existing.Id != item.Id).Take(99)]
         }, cancellationToken);
 
     public Task DeleteHistoryAsync(string workspaceId, string id, CancellationToken cancellationToken) =>

@@ -40,7 +40,7 @@ import "./styles/index.css";
 import {
   METHODS, PAGE_SIZE, SECTION_TITLES,
   emptyAssertions, defaultAssertionSummary, emptyRequest, emptyMock,
-  storageJson, createId, cloneRequestDraft, createRequestTab,
+  storageJson, setStorageJson, createId, cloneRequestDraft, createRequestTab, rehydrateRequestWorkspace,
   requestTabTitle, requestTabCloseLabel, requestTabAriaLabel,
   normalizeAuthType, parseHeaders, parseHeaderRows, serializeHeaderRows,
   parseParamRows, serializeParamRows, emptyKeyValueRows,
@@ -161,6 +161,9 @@ function App() {
   const responsePanelRef = useRef(null);
   const collectionResultsRef = useRef(null);
   const workspaceHydratedRef = useRef(false);
+  // Tracks which workspace the tabs currently in `requestWorkspace` belong to, so the
+  // persistence effect never writes one workspace's tabs under another's key mid-switch.
+  const requestTabsWorkspaceRef = useRef(null);
   const statusTimeoutRef = useRef(null);
   const spokenTimeoutRef = useRef(null);
 
@@ -227,7 +230,8 @@ function App() {
   }, []);
 
   const openRequestTab = useCallback((draft = emptyRequest, options = {}) => {
-    const tab = createRequestTab(draft);
+    const baseTab = createRequestTab(draft, options.response || null);
+    const tab = options.effectiveUrl ? { ...baseTab, effectiveUrl: options.effectiveUrl } : baseTab;
     setRequestWorkspace(current => ({ tabs: [...current.tabs, tab], activeId: tab.id }));
     if (options.activateRequests !== false) {
       setActiveSection("requests");
@@ -267,6 +271,19 @@ function App() {
     return `${path}?${parameters}`;
   }, [activeWorkspaceId]);
 
+  // Restore a workspace's saved request tabs from localStorage (drafts survive refresh,
+  // Postman-style). Falls back to a single empty tab when nothing was saved.
+  const restoreRequestTabs = useCallback((workspaceId) => {
+    const restored = rehydrateRequestWorkspace(storageJson(workspaceStorageKey("request-tabs", workspaceId), null));
+    if (restored) {
+      setRequestWorkspace(restored);
+    } else {
+      const tab = createRequestTab();
+      setRequestWorkspace({ tabs: [tab], activeId: tab.id });
+    }
+    requestTabsWorkspaceRef.current = workspaceId;
+  }, [workspaceStorageKey]);
+
   const readBrowserWorkspaceState = useCallback((workspaceId) => ({
     history: storageJson(workspaceStorageKey("history", workspaceId), workspaceId === "default" ? storageJson("accessible-api-tester-history", []) : []),
     collections: storageJson(workspaceStorageKey("collections", workspaceId), workspaceId === "default" ? storageJson("accessible-api-tester-collections", []) : []),
@@ -277,7 +294,7 @@ function App() {
   }), [workspaceStorageKey]);
 
   const saveState = useCallback(async (workspaceId, next) => {
-    localStorage.setItem(workspaceStorageKey("history", workspaceId), JSON.stringify(next.history));
+    setStorageJson(workspaceStorageKey("history", workspaceId), next.history);
     localStorage.setItem(workspaceStorageKey("collections", workspaceId), JSON.stringify(next.collections));
     localStorage.setItem(workspaceStorageKey("environments", workspaceId), JSON.stringify(next.environments));
     localStorage.setItem(workspaceStorageKey("mocks", workspaceId), JSON.stringify(next.mocks));
@@ -427,6 +444,7 @@ function App() {
 
       setProfiles(storageJson(workspaceStorageKey("profiles", workspaceId), []));
       setActiveProfileId(localStorage.getItem(workspaceStorageKey("activeProfile", workspaceId)) || null);
+      restoreRequestTabs(workspaceId);
 
       const settings = storageJson("accessible-api-tester-google-oauth-settings", {});
       setOauth({
@@ -469,10 +487,20 @@ function App() {
       }
       setProfiles(storageJson(workspaceStorageKey("profiles"), []));
       setActiveProfileId(localStorage.getItem(workspaceStorageKey("activeProfile")) || null);
+      restoreRequestTabs(activeWorkspaceId);
     }
 
     loadWorkspace();
   }, [activeWorkspaceId, announce, readBrowserWorkspaceState, workspaces.length, workspaceQuery]);
+
+  // Persist open request tabs (drafts + last response) per workspace so they survive a
+  // page refresh. Skipped until the workspace is resolved, and while a workspace switch is
+  // in flight (ref still points at the previous workspace) to avoid cross-writing tabs.
+  useEffect(() => {
+    if (!workspaceHydratedRef.current) return;
+    if (requestTabsWorkspaceRef.current !== activeWorkspaceId) return;
+    setStorageJson(workspaceStorageKey("request-tabs"), requestWorkspace);
+  }, [requestWorkspace, activeWorkspaceId, workspaceStorageKey]);
 
   useEffect(() => {
     async function handleCallback() {

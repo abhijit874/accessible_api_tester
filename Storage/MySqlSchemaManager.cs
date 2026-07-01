@@ -8,7 +8,7 @@ sealed class MySqlSchemaManager(
     string databaseConnectionString,
     ILogger logger)
 {
-    private const int CurrentSchemaVersion = 16;
+    private const int CurrentSchemaVersion = 17;
 
     public async Task EnsureInitializedAsync(CancellationToken cancellationToken)
     {
@@ -274,6 +274,16 @@ sealed class MySqlSchemaManager(
             await DropColumnIfExistsAsync(connection, "workspaces", "project_id", cancellationToken);
             await ExecuteAsync(connection, "DROP TABLE IF EXISTS projects;", cancellationToken);
             await MarkMigrationAppliedAsync(connection, 16, "Remove project entity (projects table and project_id from workspaces)", cancellationToken);
+        }
+
+        if (appliedVersion < 17)
+        {
+            await EnsureColumnAsync(connection, "request_history", "response_status_text", "VARCHAR(255) NULL", cancellationToken);
+            await EnsureColumnAsync(connection, "request_history", "response_duration_ms", "BIGINT NULL", cancellationToken);
+            await EnsureColumnAsync(connection, "request_history", "response_headers", "MEDIUMTEXT NULL", cancellationToken);
+            await EnsureColumnAsync(connection, "request_history", "response_body", "LONGTEXT NULL", cancellationToken);
+            await EnsureColumnAsync(connection, "request_history", "response_is_base64", "TINYINT(1) NOT NULL DEFAULT 0", cancellationToken);
+            await MarkMigrationAppliedAsync(connection, 17, "Capture response (status text, duration, headers, body) in request history", cancellationToken);
         }
 
         var finalVersion = await GetAppliedVersionAsync(connection, cancellationToken);

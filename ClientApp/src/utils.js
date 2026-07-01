@@ -73,6 +73,18 @@ export function storageJson(key, fallback) {
   }
 }
 
+// Safe localStorage write: history entries now carry full response bodies, so a
+// large payload can blow past the browser quota. Swallow the failure (the backend
+// store remains the source of truth) rather than breaking the send flow.
+export function setStorageJson(key, value) {
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export function createId() {
   return crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
 }
@@ -106,6 +118,28 @@ export function createRequestTab(request = emptyRequest, response = null, assert
     },
     scriptResult: null
   };
+}
+
+// Rebuild the request-tab workspace from a persisted (JSON-serialized) snapshot.
+// Request drafts are normalized through createRequestTab/cloneRequestDraft (which
+// resets un-serializable file uploads to null); each tab's stored response and
+// script/assertion state are carried back so a refresh restores where you left off.
+// Returns null when there's nothing usable to restore.
+export function rehydrateRequestWorkspace(saved) {
+  if (!saved || !Array.isArray(saved.tabs) || saved.tabs.length === 0) return null;
+  const tabs = saved.tabs.map(entry => {
+    const normalized = createRequestTab(entry.request || emptyRequest, entry.response || null, entry.assertionSummary || defaultAssertionSummary);
+    return {
+      ...entry,
+      ...normalized,
+      id: entry.id || normalized.id,
+      request: normalized.request,
+      response: entry.response || null,
+      scriptResult: entry.scriptResult || null
+    };
+  });
+  const activeId = tabs.some(tab => tab.id === saved.activeId) ? saved.activeId : tabs[0].id;
+  return { tabs, activeId };
 }
 
 export function requestTabTitle(tab) {
